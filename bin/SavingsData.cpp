@@ -137,6 +137,40 @@ DepositResult SavingsData::AddDeposit(double amount) {
     return DepositResult::Added;
 }
 
+DepositResult SavingsData::RemoveFunds(double amount) {
+    if (!std::isfinite(amount) || amount <= 0.0) {
+        return DepositResult::InvalidAmount;
+    }
+    if (amount > 1000000.0) {
+        return DepositResult::TooLarge;
+    }
+
+    const int amountCents = static_cast<int>(std::lround(amount * 100.0));
+    if (amountCents <= 0) {
+        return DepositResult::InvalidAmount;
+    }
+    if (amountCents > savedCents_) {
+        return DepositResult::InsufficientFunds;
+    }
+
+    const int newSavedCents = savedCents_ - amountCents;
+    if (!Save(newSavedCents)) {
+        return DepositResult::SaveFailed;
+    }
+
+    savedCents_ = newSavedCents;
+    return DepositResult::Removed;
+}
+
+bool SavingsData::Reset() {
+    if (!Save(0)) {
+        return false;
+    }
+
+    savedCents_ = 0;
+    return true;
+}
+
 bool SavingsData::Save(int savedCents) const {
     const auto path = GetBinaryDataFilePath();
     if (path.empty()) {

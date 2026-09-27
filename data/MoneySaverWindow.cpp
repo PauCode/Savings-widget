@@ -18,6 +18,9 @@ namespace {
 constexpr wchar_t kWindowClass[] = L"MoneySavingWidgetWindow";
 constexpr int kGoalCents = 100000;
 constexpr int kAmountEditId = 1001;
+constexpr int kAddModeControlId = 1003;
+constexpr int kRemoveModeControlId = 1004;
+constexpr int kResetControlId = 1005;
 
 std::wstring FormatMoney(double amount, const wchar_t* currencyCode) {
     std::wostringstream text;
@@ -52,7 +55,7 @@ int NativeFallbackWindow::Run(HINSTANCE instance, int showCommand) {
 
     constexpr DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
     constexpr DWORD extendedStyle = WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    RECT bounds{0, 0, 320, 270};
+    RECT bounds{0, 0, 320, 370};
     AdjustWindowRectEx(&bounds, style, FALSE, extendedStyle);
 
     window_ = CreateWindowExW(
@@ -108,6 +111,22 @@ LRESULT NativeFallbackWindow::HandleMessage(
 
     case WM_COMMAND:
         {
+            if (LOWORD(wParam) == kAddModeControlId &&
+                HIWORD(wParam) == BN_CLICKED) {
+                SetMode(true);
+                return 0;
+            }
+            if (LOWORD(wParam) == kRemoveModeControlId &&
+                HIWORD(wParam) == BN_CLICKED) {
+                SetMode(false);
+                return 0;
+            }
+            if (LOWORD(wParam) == kResetControlId &&
+                HIWORD(wParam) == BN_CLICKED) {
+                ResetSavings();
+                return 0;
+            }
+
             int presetAmountRon = 0;
             if (presetDepositButtons_.GetAmountForClick(wParam, presetAmountRon)) {
                 AddDeposit(static_cast<double>(presetAmountRon), false);
@@ -146,30 +165,53 @@ bool NativeFallbackWindow::CreateControls() {
         return false;
     }
 
-    HWND depositLabel = CreateWindowW(
-        L"STATIC", L"Add a deposit (RON):", WS_CHILD | WS_VISIBLE,
-        20, 108, 160, 20, window_, nullptr, nullptr, nullptr);
+    HWND modeLabel = CreateWindowW(
+        L"STATIC", L"Change savings:", WS_CHILD | WS_VISIBLE,
+        20, 108, 96, 22, window_, nullptr, nullptr, nullptr);
+    const DWORD radioStyle = WS_CHILD | WS_VISIBLE | BS_AUTORADIOBUTTON;
+    addModeButton_ = CreateWindowW(
+        L"BUTTON", L"Add", radioStyle | WS_GROUP,
+        120, 106, 68, 24, window_,
+        reinterpret_cast<HMENU>(static_cast<INT_PTR>(kAddModeControlId)),
+        nullptr, nullptr);
+    removeModeButton_ = CreateWindowW(
+        L"BUTTON", L"Remove", radioStyle,
+        192, 106, 92, 24, window_,
+        reinterpret_cast<HMENU>(static_cast<INT_PTR>(kRemoveModeControlId)),
+        nullptr, nullptr);
+    SendMessageW(addModeButton_, BM_SETCHECK, BST_CHECKED, 0);
+
+    HWND amountLabel = CreateWindowW(
+        L"STATIC", L"Amount (RON):", WS_CHILD | WS_VISIBLE,
+        20, 136, 160, 18, window_, nullptr, nullptr, nullptr);
     amountEdit_ = CreateWindowExW(
         WS_EX_CLIENTEDGE, L"EDIT", L"25.00",
         WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
-        20, 132, 170, 26, window_,
+        20, 156, 170, 26, window_,
         reinterpret_cast<HMENU>(static_cast<INT_PTR>(kAmountEditId)),
+        nullptr, nullptr);
+    presetLabel_ = CreateWindowW(
+        L"STATIC", L"Quick add (RON):", WS_CHILD | WS_VISIBLE,
+        20, 190, 280, 20, window_, nullptr, nullptr, nullptr);
+    HWND resetButton = CreateWindowW(
+        L"BUTTON", L"Reset savings", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+        20, 292, 120, 26, window_,
+        reinterpret_cast<HMENU>(static_cast<INT_PTR>(kResetControlId)),
         nullptr, nullptr);
     statusLabel_ = CreateWindowW(
         L"STATIC", L"", WS_CHILD | WS_VISIBLE,
-        20, 230, 280, 28, window_, nullptr, nullptr, nullptr);
-    HWND presetLabel = CreateWindowW(
-        L"STATIC", L"Quick add (RON):", WS_CHILD | WS_VISIBLE,
-        20, 168, 280, 20, window_, nullptr, nullptr, nullptr);
+        20, 326, 280, 32, window_, nullptr, nullptr, nullptr);
 
-    if (!depositLabel || !amountEdit_ || !statusLabel_ || !presetLabel ||
+    if (!modeLabel || !addModeButton_ || !removeModeButton_ || !amountLabel ||
+        !amountEdit_ || !statusLabel_ || !presetLabel_ || !resetButton ||
         !depositButton_.Create(window_, font_) ||
         !presetDepositButtons_.Create(window_, font_)) {
         return false;
     }
 
-    for (HWND control : {savedLabel_, goalLabel_, amountEdit_,
-                         statusLabel_, presetLabel}) {
+    for (HWND control : {savedLabel_, goalLabel_, modeLabel, addModeButton_,
+                         removeModeButton_, amountLabel, amountEdit_,
+                         presetLabel_, resetButton, statusLabel_}) {
         SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(font_), TRUE);
     }
     return true;
@@ -252,7 +294,8 @@ void NativeFallbackWindow::UpdateDisplay() {
     SetWindowTextW(
         statusLabel_, savedCents >= kGoalCents
                           ? L"Goal reached. Great work!"
-                          : L"Every deposit gets you closer.");
+                          : isAdding_ ? L"Every deposit gets you closer."
+                                      : L"Remove funds when you need them.");
 }
 
 void NativeFallbackWindow::AddDeposit() {
@@ -287,13 +330,19 @@ void NativeFallbackWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
         return;
     }
 
-    const DepositResult result = savingsData_.AddDeposit(*amountUsd);
+    const DepositResult result = isAdding_
+        ? savingsData_.AddDeposit(*amountUsd)
+        : savingsData_.RemoveFunds(*amountUsd);
     if (result == DepositResult::InvalidAmount) {
         SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
         return;
     }
     if (result == DepositResult::TooLarge) {
         SetWindowTextW(statusLabel_, L"That deposit is too large.");
+        return;
+    }
+    if (result == DepositResult::InsufficientFunds) {
+        SetWindowTextW(statusLabel_, L"Not enough savings to remove that amount.");
         return;
     }
     if (result == DepositResult::SaveFailed) {
@@ -305,7 +354,38 @@ void NativeFallbackWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
         SetWindowTextW(amountEdit_, L"");
     }
     UpdateDisplay();
+    SetWindowTextW(statusLabel_, isAdding_ ? L"Deposit added."
+                                           : L"Amount removed.");
     if (clearAmountEdit) {
         SetFocus(amountEdit_);
     }
+}
+
+void NativeFallbackWindow::SetMode(bool isAdding) {
+    isAdding_ = isAdding;
+    SendMessageW(addModeButton_, BM_SETCHECK,
+                 isAdding_ ? BST_CHECKED : BST_UNCHECKED, 0);
+    SendMessageW(removeModeButton_, BM_SETCHECK,
+                 isAdding_ ? BST_UNCHECKED : BST_CHECKED, 0);
+    depositButton_.SetCaption(isAdding_ ? L"Add" : L"Remove");
+    SetWindowTextW(presetLabel_, isAdding_
+                                     ? L"Quick add (RON):"
+                                     : L"Quick remove (RON):");
+}
+
+void NativeFallbackWindow::ResetSavings() {
+    const int answer = MessageBoxW(
+        window_, L"Reset the savings balance to zero? This cannot be undone.",
+        L"Reset savings", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+    if (answer != IDYES) {
+        return;
+    }
+
+    if (!savingsData_.Reset()) {
+        SetWindowTextW(statusLabel_, L"Could not reset savings.");
+        return;
+    }
+
+    UpdateDisplay();
+    SetWindowTextW(statusLabel_, L"Savings reset.");
 }

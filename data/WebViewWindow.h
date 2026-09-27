@@ -49,6 +49,8 @@ private:
     void HandleWebMessage(ICoreWebView2WebMessageReceivedEventArgs* args);
     void HandleRatesLoaded();
     void HandleDeposit(double amountRon);
+    void HandleWithdrawal(double amountRon);
+    void HandleReset();
     void HandleThemeSelection(const std::wstring& filename);
     void StartRatesFetch();
     void SendState(const std::wstring& status = {});

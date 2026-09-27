@@ -378,6 +378,10 @@ void WebViewWindow::HandleWebMessage(
             SendState();
         } else if (type == L"deposit") {
             HandleDeposit(message.GetNamedNumber(L"amountRon"));
+        } else if (type == L"withdraw") {
+            HandleWithdrawal(message.GetNamedNumber(L"amountRon"));
+        } else if (type == L"reset") {
+            HandleReset();
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -456,7 +460,61 @@ void WebViewWindow::HandleDeposit(double amountRon) {
     case DepositResult::Added:
         SendState(L"Deposit added.");
         return;
+    case DepositResult::Removed:
+    case DepositResult::InsufficientFunds:
+        break;
     }
+}
+
+void WebViewWindow::HandleWithdrawal(double amountRon) {
+    if (!ratesAvailable_) {
+        SendState(ratesLoading_ ? L"RON rates are still loading."
+                                : L"RON rates are unavailable.");
+        return;
+    }
+
+    const auto amountUsd = currencyRates_.Convert(amountRon, "RON", "USD");
+    if (!amountUsd || *amountUsd <= 0.0) {
+        SendState(L"Enter a valid amount greater than 0 RON.");
+        return;
+    }
+
+    const DepositResult result = savingsData_.RemoveFunds(*amountUsd);
+    switch (result) {
+    case DepositResult::Removed:
+        SendState(L"Amount removed.");
+        return;
+    case DepositResult::InsufficientFunds:
+        SendState(L"Not enough savings to remove that amount.");
+        return;
+    case DepositResult::InvalidAmount:
+        SendState(L"Enter a valid amount greater than 0 RON.");
+        return;
+    case DepositResult::TooLarge:
+        SendState(L"That amount is too large.");
+        return;
+    case DepositResult::SaveFailed:
+        SendState(L"Could not save data.");
+        return;
+    case DepositResult::Added:
+        return;
+    }
+}
+
+void WebViewWindow::HandleReset() {
+    const int answer = MessageBoxW(
+        window_, L"Reset the savings balance to zero? This cannot be undone.",
+        L"Reset savings", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2);
+    if (answer != IDYES) {
+        return;
+    }
+
+    if (!savingsData_.Reset()) {
+        SendState(L"Could not reset savings.");
+        return;
+    }
+
+    SendState(L"Savings reset.");
 }
 
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {

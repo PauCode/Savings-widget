@@ -35,14 +35,20 @@ private:
     void UpdateDisplay();
     void AddDeposit();
     void AddDeposit(double amountRon, bool clearAmountEdit);
+    void SetMode(bool isAdding);
+    void ResetSavings();
 
     HINSTANCE instance_ = nullptr;
     HWND window_ = nullptr;
     HWND savedLabel_ = nullptr;
     HWND goalLabel_ = nullptr;
+    HWND addModeButton_ = nullptr;
+    HWND removeModeButton_ = nullptr;
     HWND amountEdit_ = nullptr;
+    HWND presetLabel_ = nullptr;
     HWND statusLabel_ = nullptr;
     HFONT font_ = nullptr;
+    bool isAdding_ = true;
     bool ratesLoading_ = true;
     bool ratesAvailable_ = false;
     SavingsData savingsData_;

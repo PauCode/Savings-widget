@@ -10,7 +10,7 @@ public:
 
 private:
     static constexpr int kFirstControlId = 1100;
-    static constexpr std::array<int, 5> kAmountsRon{
-        50, 100, 250, 500, 1000
+    static constexpr std::array<int, 6> kAmountsRon{
+        50, 100, 250, 500, 1000, 1500
     };
 };

@@ -237,24 +237,6 @@ select:focus-visible {
     background: linear-gradient(rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.02));
 }
 
-.progress-caption {
-    display: flex;
-    gap: 6px;
-    margin-top: 19px;
-    padding: 7px 13px;
-    border: 1px solid var(--panel-edge);
-    border-radius: 999px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-size: 12px;
-    font-weight: 650;
-}
-
-.progress-caption span:last-child {
-    color: var(--muted);
-    font-weight: 450;
-}
-
 .rate-stamp {
     margin-top: 11px;
     color: var(--muted);
@@ -326,7 +308,8 @@ select:focus-visible {
 }
 
 .progress-track {
-    height: 8px;
+    position: relative;
+    height: 18px;
     overflow: hidden;
     margin: 17px 1px 24px;
     border-radius: 99px;
@@ -334,11 +317,26 @@ select:focus-visible {
 }
 
 .progress-value {
+    position: absolute;
+    inset: 0 auto 0 0;
     width: 0;
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, var(--accent-strong), var(--accent), var(--warm));
     transition: width 420ms ease;
+}
+
+.progress-label {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 700;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
 }
 
 .section-heading {
@@ -353,6 +351,34 @@ select:focus-visible {
     margin: 0;
     font-size: 17px;
     font-weight: 620;
+}
+
+.mode-toggle {
+    display: inline-flex;
+    gap: 3px;
+    margin-bottom: 12px;
+    padding: 4px;
+    border: 1px solid var(--panel-edge);
+    border-radius: 9px;
+    background: var(--field);
+}
+
+.mode-button {
+    min-width: 92px;
+    min-height: 32px;
+    padding: 0 13px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.mode-button.is-active {
+    background: var(--accent-soft);
+    color: var(--accent);
 }
 
 .currency-tag {
@@ -391,10 +417,6 @@ select:focus-visible {
     border-color: var(--accent);
     background: var(--accent-soft);
     transform: translateY(-1px);
-}
-
-.preset-wide {
-    grid-column: span 3;
 }
 
 .manual-deposit {
@@ -445,6 +467,30 @@ input:disabled {
     font-size: 12px;
 }
 
+.feedback-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.reset-button {
+    flex: none;
+    min-height: 36px;
+    margin-top: 3px;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 620;
+}
+
+.reset-button:hover {
+    text-decoration: underline;
+}
+
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -475,9 +521,6 @@ input:disabled {
         height: 194px;
     }
 
-    .progress-caption {
-        margin-top: 13px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -506,10 +549,6 @@ input:disabled {
 
     .preset-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .preset-wide {
-        grid-column: auto;
     }
 
     .manual-deposit {

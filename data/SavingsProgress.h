@@ -9,4 +9,5 @@ public:
 
 private:
     HWND progressBar_ = nullptr;
+    HWND percentageLabel_ = nullptr;
 };
