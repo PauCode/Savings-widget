@@ -49,6 +49,8 @@ private:
     HWND statusLabel_ = nullptr;
     HFONT font_ = nullptr;
     bool isAdding_ = true;
+    int goalUsdCents_ = SavingsData::kDefaultGoalCents;
+    int goalRonCents_ = 0;
     bool ratesLoading_ = true;
     bool ratesAvailable_ = false;
     SavingsData savingsData_;

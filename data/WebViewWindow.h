@@ -51,6 +51,7 @@ private:
     void HandleDeposit(double amountRon);
     void HandleWithdrawal(double amountRon);
     void HandleReset();
+    void HandleGoalChange(double amountRon);
     void HandleThemeSelection(const std::wstring& filename);
     void StartRatesFetch();
     void SendState(const std::wstring& status = {});
@@ -72,6 +73,8 @@ private:
     std::shared_ptr<RatesFetchState> ratesFetchState_;
     SavingsData savingsData_;
     CurrencyRates currencyRates_;
+    int goalUsdCents_ = SavingsData::kDefaultGoalCents;
+    int goalRonCents_ = 0;
     std::vector<std::wstring> themes_;
     std::wstring selectedTheme_ = L"default.css";
     std::wstring status_;

@@ -27,6 +27,13 @@ std::filesystem::path GetLegacyDataFilePath() {
             / L"Data" / L"savings.txt";
 }
 
+std::filesystem::path GetGoalDataFilePath() {
+    const auto balancePath = GetBinaryDataFilePath();
+    return balancePath.empty()
+        ? std::filesystem::path{}
+        : balancePath.parent_path() / L"goal.dat";
+}
+
 bool ReadBinaryBalance(
     const std::filesystem::path& path, int maximumSavedCents, int& savedCents) {
     std::ifstream file(path, std::ios::binary);
@@ -47,6 +54,29 @@ bool ReadBinaryBalance(
 
     savedCents = static_cast<int>(value);
     return true;
+}
+
+bool WriteBinaryBalance(const std::filesystem::path& path, int savedCents) {
+    std::error_code error;
+    std::filesystem::create_directories(path.parent_path(), error);
+    if (error) {
+        return false;
+    }
+
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        return false;
+    }
+
+    const std::uint32_t value = static_cast<std::uint32_t>(savedCents);
+    const unsigned char bytes[4]{
+        static_cast<unsigned char>(value & 0xff),
+        static_cast<unsigned char>((value >> 8) & 0xff),
+        static_cast<unsigned char>((value >> 16) & 0xff),
+        static_cast<unsigned char>((value >> 24) & 0xff)
+    };
+    file.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
+    return file.good();
 }
 
 bool ReadLegacyBalance(
@@ -171,8 +201,67 @@ bool SavingsData::Reset() {
     return true;
 }
 
-bool SavingsData::Save(int savedCents) const {
-    const auto path = GetBinaryDataFilePath();
+bool SavingsData::LoadGoalCents(
+    int& goalUsdCents, int& displayRonCents) const {
+    goalUsdCents = kDefaultGoalCents;
+    displayRonCents = 0;
+    const auto path = GetGoalDataFilePath();
+    if (path.empty()) {
+        return false;
+    }
+
+    std::error_code error;
+    const bool exists = std::filesystem::exists(path, error);
+    if (error) {
+        return false;
+    }
+    if (!exists) {
+        return true;
+    }
+
+    std::ifstream file(path, std::ios::binary);
+    unsigned char bytes[8]{};
+    file.read(reinterpret_cast<char*>(bytes), 4);
+    if (!file) {
+        return false;
+    }
+
+    const auto decodeCents = [&bytes](std::size_t offset) {
+        return static_cast<std::uint32_t>(bytes[offset]) |
+            (static_cast<std::uint32_t>(bytes[offset + 1]) << 8) |
+            (static_cast<std::uint32_t>(bytes[offset + 2]) << 16) |
+            (static_cast<std::uint32_t>(bytes[offset + 3]) << 24);
+    };
+
+    const std::uint32_t storedUsdCents = decodeCents(0);
+    if (storedUsdCents == 0 || storedUsdCents > kMaximumSavedCents) {
+        return false;
+    }
+    goalUsdCents = static_cast<int>(storedUsdCents);
+
+    if (file.peek() != std::char_traits<char>::eof()) {
+        file.read(reinterpret_cast<char*>(bytes + 4), 4);
+        if (!file || file.peek() != std::char_traits<char>::eof()) {
+            return false;
+        }
+        const std::uint32_t storedRonCents = decodeCents(4);
+        if (storedRonCents == 0 || storedRonCents > kMaximumSavedCents) {
+            return false;
+        }
+        displayRonCents = static_cast<int>(storedRonCents);
+    }
+
+    return true;
+}
+
+bool SavingsData::SaveGoalCents(
+    int goalUsdCents, int displayRonCents) const {
+    if (goalUsdCents <= 0 || goalUsdCents > kMaximumSavedCents ||
+        displayRonCents <= 0 || displayRonCents > kMaximumSavedCents) {
+        return false;
+    }
+
+    const auto path = GetGoalDataFilePath();
     if (path.empty()) {
         return false;
     }
@@ -188,13 +277,24 @@ bool SavingsData::Save(int savedCents) const {
         return false;
     }
 
-    const std::uint32_t value = static_cast<std::uint32_t>(savedCents);
-    const unsigned char bytes[4]{
-        static_cast<unsigned char>(value & 0xff),
-        static_cast<unsigned char>((value >> 8) & 0xff),
-        static_cast<unsigned char>((value >> 16) & 0xff),
-        static_cast<unsigned char>((value >> 24) & 0xff)
+    const std::uint32_t values[2]{
+        static_cast<std::uint32_t>(goalUsdCents),
+        static_cast<std::uint32_t>(displayRonCents)
     };
+    unsigned char bytes[8]{};
+    for (std::size_t valueIndex = 0; valueIndex < 2; ++valueIndex) {
+        const std::uint32_t value = values[valueIndex];
+        const std::size_t offset = valueIndex * 4;
+        bytes[offset] = static_cast<unsigned char>(value & 0xff);
+        bytes[offset + 1] = static_cast<unsigned char>((value >> 8) & 0xff);
+        bytes[offset + 2] = static_cast<unsigned char>((value >> 16) & 0xff);
+        bytes[offset + 3] = static_cast<unsigned char>((value >> 24) & 0xff);
+    }
     file.write(reinterpret_cast<const char*>(bytes), sizeof(bytes));
     return file.good();
+}
+
+bool SavingsData::Save(int savedCents) const {
+    const auto path = GetBinaryDataFilePath();
+    return !path.empty() && WriteBinaryBalance(path, savedCents);
 }

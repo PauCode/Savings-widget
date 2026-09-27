@@ -52,6 +52,7 @@
                         <div class="goal-line">
                             <span>Target</span>
                             <strong id="goal-value">--.-- RON</strong>
+                            <button id="edit-goal-button" class="inline-action" type="button" disabled>Change</button>
                         </div>
                     </div>
 
@@ -96,6 +97,19 @@
                 </div>
             </section>
         </main>
+        <dialog id="goal-dialog" class="goal-dialog" aria-labelledby="goal-dialog-title">
+            <form id="goal-form">
+                <p class="eyebrow">SAVINGS TARGET</p>
+                <h2 id="goal-dialog-title">Change goal</h2>
+                <label for="goal-amount">New goal amount (RON)</label>
+                <input id="goal-amount" name="goal" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required>
+                <p id="goal-error" class="goal-error" role="status" aria-live="polite"></p>
+                <div class="dialog-actions">
+                    <button id="cancel-goal" class="preset-button" type="button">Cancel</button>
+                    <button class="primary-button" type="submit">Save goal</button>
+                </div>
+            </form>
+        </dialog>
     </div>
 </body>
 </html>

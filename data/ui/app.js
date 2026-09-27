@@ -4,13 +4,19 @@ const depositForm = document.querySelector("#deposit-form");
 const depositAmount = document.querySelector("#deposit-amount");
 const applyButton = document.querySelector("#apply-button");
 const statusMessage = document.querySelector("#status-message");
-const presetButtons = document.querySelectorAll(".preset-button");
+const presetButtons = document.querySelectorAll(".preset-grid .preset-button");
 const addModeButton = document.querySelector("#add-mode");
 const removeModeButton = document.querySelector("#remove-mode");
 const depositTitle = document.querySelector("#deposit-title");
 const resetButton = document.querySelector("#reset-button");
 const balanceValue = document.querySelector("#balance-value");
 const goalValue = document.querySelector("#goal-value");
+const editGoalButton = document.querySelector("#edit-goal-button");
+const goalDialog = document.querySelector("#goal-dialog");
+const goalForm = document.querySelector("#goal-form");
+const goalAmount = document.querySelector("#goal-amount");
+const goalError = document.querySelector("#goal-error");
+const cancelGoalButton = document.querySelector("#cancel-goal");
 const progressValue = document.querySelector("#progress-value");
 const progressLabel = document.querySelector("#progress-label");
 const progressTrack = document.querySelector(".progress-track");
@@ -76,6 +82,7 @@ function renderState(state) {
     }
 
     setDepositEnabled(state.ratesAvailable);
+    editGoalButton.disabled = !state.ratesAvailable;
     rateDate.textContent = state.ratesAvailable
         ? `Rates · ${state.rateDate}`
         : state.ratesLoading ? "Rates loading" : "Rates unavailable";
@@ -96,6 +103,9 @@ function renderState(state) {
 
     balanceValue.textContent = formatRon(state.balanceRon);
     goalValue.textContent = `${formatRon(state.goalRon)} RON`;
+    if (!goalDialog.open) {
+        goalAmount.value = Number(state.goalRon).toFixed(2);
+    }
 
     progressTrack.setAttribute("aria-valuenow", String(Math.round(percent)));
     statusMessage.textContent = state.status || "Every deposit gets you closer.";
@@ -133,6 +143,27 @@ depositForm.addEventListener("submit", (event) => {
 
 resetButton.addEventListener("click", () => {
     postMessage({ type: "reset" });
+});
+
+editGoalButton.addEventListener("click", () => {
+    goalError.textContent = "";
+    goalDialog.showModal();
+    goalAmount.focus();
+});
+
+cancelGoalButton.addEventListener("click", () => {
+    goalDialog.close();
+});
+
+goalForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const amountRon = Number(goalAmount.value);
+    if (!Number.isFinite(amountRon) || amountRon <= 0 || amountRon > 1000000) {
+        goalError.textContent = "Enter a goal between 0.01 and 1,000,000 RON.";
+        return;
+    }
+    postMessage({ type: "goal", amountRon });
+    goalDialog.close();
 });
 
 setMode("add");

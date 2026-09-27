@@ -16,7 +16,6 @@
 
 namespace {
 constexpr wchar_t kWindowClass[] = L"MoneySavingWidgetWindow";
-constexpr int kGoalCents = 100000;
 constexpr int kAmountEditId = 1001;
 constexpr int kAddModeControlId = 1003;
 constexpr int kRemoveModeControlId = 1004;
@@ -31,7 +30,8 @@ std::wstring FormatMoney(double amount, const wchar_t* currencyCode) {
 } // namespace
 
 int NativeFallbackWindow::Run(HINSTANCE instance, int showCommand) {
-    if (!savingsData_.Load()) {
+    if (!savingsData_.Load() ||
+        !savingsData_.LoadGoalCents(goalUsdCents_, goalRonCents_)) {
         MessageBoxW(nullptr, L"Could not load current\\savings.dat.",
                     L"Money Saver", MB_OK | MB_ICONERROR);
         return 1;
@@ -264,7 +264,7 @@ void NativeFallbackWindow::HandleRatesLoaded() {
 
 void NativeFallbackWindow::UpdateDisplay() {
     const int savedCents = savingsData_.GetSavedCents();
-    progress_.Update(savedCents, kGoalCents);
+    progress_.Update(savedCents, goalUsdCents_);
 
     if (!ratesAvailable_) {
         SetWindowTextW(savedLabel_, L"Saved: waiting for RON rates");
@@ -278,9 +278,10 @@ void NativeFallbackWindow::UpdateDisplay() {
 
     const auto savedRon = currencyRates_.Convert(
         savedCents / 100.0, "USD", "RON");
-    const auto goalRon = currencyRates_.Convert(
-        kGoalCents / 100.0, "USD", "RON");
-    if (!savedRon || !goalRon) {
+    const auto convertedGoalRon = goalRonCents_ <= 0
+        ? currencyRates_.Convert(goalUsdCents_ / 100.0, "USD", "RON")
+        : std::optional<double>{};
+    if (!savedRon || (goalRonCents_ <= 0 && !convertedGoalRon)) {
         SetWindowTextW(savedLabel_, L"Saved: conversion unavailable");
         SetWindowTextW(goalLabel_, L"Goal: conversion unavailable");
         SetWindowTextW(statusLabel_, L"Could not convert the current balance.");
@@ -290,9 +291,11 @@ void NativeFallbackWindow::UpdateDisplay() {
     SetWindowTextW(
         savedLabel_, (L"Saved: " + FormatMoney(*savedRon, L"RON")).c_str());
     SetWindowTextW(
-        goalLabel_, (L"Goal: " + FormatMoney(*goalRon, L"RON")).c_str());
+        goalLabel_, (L"Goal: " + FormatMoney(
+            goalRonCents_ > 0 ? goalRonCents_ / 100.0 : *convertedGoalRon,
+            L"RON")).c_str());
     SetWindowTextW(
-        statusLabel_, savedCents >= kGoalCents
+        statusLabel_, savedCents >= goalUsdCents_
                           ? L"Goal reached. Great work!"
                           : isAdding_ ? L"Every deposit gets you closer."
                                       : L"Remove funds when you need them.");

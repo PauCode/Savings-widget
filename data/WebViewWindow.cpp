@@ -23,7 +23,6 @@ using Microsoft::WRL::ComPtr;
 
 constexpr wchar_t kWindowClass[] = L"SavingsJarWebViewWindow";
 constexpr wchar_t kVirtualHost[] = L"savings-jar.local";
-constexpr int kGoalCents = 100000;
 
 class WinRtApartment {
 public:
@@ -107,7 +106,8 @@ WebViewWindow::~WebViewWindow() {
 }
 
 bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
-    if (!savingsData_.Load()) {
+    if (!savingsData_.Load() ||
+        !savingsData_.LoadGoalCents(goalUsdCents_, goalRonCents_)) {
         return false;
     }
 
@@ -382,6 +382,8 @@ void WebViewWindow::HandleWebMessage(
             HandleWithdrawal(message.GetNamedNumber(L"amountRon"));
         } else if (type == L"reset") {
             HandleReset();
+        } else if (type == L"goal") {
+            HandleGoalChange(message.GetNamedNumber(L"amountRon"));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -517,6 +519,37 @@ void WebViewWindow::HandleReset() {
     SendState(L"Savings reset.");
 }
 
+void WebViewWindow::HandleGoalChange(double amountRon) {
+    if (!ratesAvailable_) {
+        SendState(L"RON rates are unavailable; the goal was not changed.");
+        return;
+    }
+
+    const auto goalUsd = currencyRates_.Convert(amountRon, "RON", "USD");
+    if (!goalUsd || *goalUsd <= 0.0) {
+        SendState(L"Enter a valid goal greater than 0 RON.");
+        return;
+    }
+
+    const long goalUsdCents = std::lround(*goalUsd * 100.0);
+    const long goalRonCents = std::lround(amountRon * 100.0);
+    if (goalUsdCents <= 0 || goalUsdCents > SavingsData::kMaximumGoalCents ||
+        goalRonCents <= 0 || goalRonCents > SavingsData::kMaximumGoalCents) {
+        SendState(L"That goal is too large.");
+        return;
+    }
+
+    if (!savingsData_.SaveGoalCents(
+            static_cast<int>(goalUsdCents), static_cast<int>(goalRonCents))) {
+        SendState(L"Could not save the new goal.");
+        return;
+    }
+
+    goalUsdCents_ = static_cast<int>(goalUsdCents);
+    goalRonCents_ = static_cast<int>(goalRonCents);
+    SendState(L"Savings goal updated.");
+}
+
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
     if (std::find(themes_.begin(), themes_.end(), filename) == themes_.end()) {
         return;
@@ -534,7 +567,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
     if (!status.empty()) {
         status_ = status;
     } else if (ratesAvailable_) {
-        status_ = savingsData_.GetSavedCents() >= kGoalCents
+        status_ = savingsData_.GetSavedCents() >= goalUsdCents_
             ? L"Goal reached. Great work!"
             : L"Every deposit gets you closer.";
     } else if (ratesLoading_) {
@@ -547,11 +580,16 @@ void WebViewWindow::SendState(const std::wstring& status) {
     const auto balanceRon = ratesAvailable_
         ? currencyRates_.Convert(savedCents / 100.0, "USD", "RON")
         : std::optional<double>{};
-    const auto goalRon = ratesAvailable_
-        ? currencyRates_.Convert(kGoalCents / 100.0, "USD", "RON")
+    const auto convertedGoalRon = ratesAvailable_ && goalRonCents_ <= 0
+        ? currencyRates_.Convert(goalUsdCents_ / 100.0, "USD", "RON")
         : std::optional<double>{};
+    const double goalRon = goalRonCents_ > 0
+        ? goalRonCents_ / 100.0
+        : convertedGoalRon.value_or(0.0);
     const double rawProgressRatio =
-        static_cast<double>(savedCents) * 100.0 / kGoalCents;
+        goalUsdCents_ > 0
+            ? static_cast<double>(savedCents) * 100.0 / goalUsdCents_
+            : 0.0;
     const double progressRatio = rawProgressRatio > 0.0 ? rawProgressRatio : 0.0;
     const double progressPercent = std::clamp(progressRatio, 0.0, 100.0);
 
@@ -562,7 +600,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << (ratesAvailable_ ? L"true" : L"false")
          << L",\"ratesLoading\":" << (ratesLoading_ ? L"true" : L"false")
          << L",\"balanceRon\":" << balanceRon.value_or(0.0)
-         << L",\"goalRon\":" << goalRon.value_or(0.0)
+         << L",\"goalRon\":" << goalRon
          << L",\"progressPercent\":" << progressPercent
          << L",\"progressRatio\":" << progressRatio
          << L",\"rateDate\":\""

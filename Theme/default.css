@@ -306,6 +306,7 @@ select:focus-visible {
 
 .goal-line {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
     margin-top: 9px;
@@ -316,6 +317,77 @@ select:focus-visible {
 .goal-line strong {
     font-size: 13px;
     font-weight: 560;
+}
+
+.inline-action {
+    flex: none;
+    padding: 4px 8px;
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.inline-action:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.goal-dialog {
+    width: min(370px, calc(100vw - 32px));
+    padding: 0;
+    border: 1px solid var(--panel-edge);
+    border-radius: 10px;
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 20px 60px var(--shadow);
+}
+
+.goal-dialog::backdrop {
+    background: rgba(2, 8, 13, 0.72);
+}
+
+.goal-dialog form {
+    display: grid;
+    gap: 11px;
+    padding: 22px;
+}
+
+.goal-dialog h2 {
+    margin: 0 0 3px;
+    font-size: 22px;
+}
+
+.goal-dialog label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.goal-dialog input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--panel-edge);
+    border-radius: 7px;
+    background: var(--field);
+    color: var(--text);
+    font: inherit;
+}
+
+.goal-error {
+    min-height: 17px;
+    margin: 0;
+    color: var(--danger);
+    font-size: 12px;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 4px;
 }
 
 .progress-track {
