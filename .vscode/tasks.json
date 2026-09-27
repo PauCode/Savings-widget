@@ -1,28 +1,15 @@
 {
     "tasks": [
         {
-            "type": "cppbuild",
+            "type": "shell",
             "label": "C/C++: cl.exe build Money Saver",
-            "command": "cl.exe",
+            "command": "powershell.exe",
             "args": [
-                "/Zi",
-                "/EHsc",
-                "/nologo",
-                "/std:c++17",
-                "/Fo${workspaceFolder}\\prototypes\\",
-                "/Fd${workspaceFolder}\\prototypes\\MoneySavingWidgetCompiler.pdb",
-                "/Fe${workspaceFolder}\\prototypes\\MoneySavingWidget.exe",
-                "${workspaceFolder}\\data\\MoneySavingWidgetPrototype.cpp",
-                "${workspaceFolder}\\data\\MoneySaverWindow.cpp",
-                "${workspaceFolder}\\data\\DepositButton.cpp",
-                "${workspaceFolder}\\data\\SavingsProgress.cpp",
-                "${workspaceFolder}\\bin\\SavingsData.cpp",
-                "${workspaceFolder}\\bin\\CurrencyRates.cpp",
-                "/link",
-                "User32.lib",
-                "Gdi32.lib",
-                "Winhttp.lib",
-                "WindowsApp.lib"
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}\\scripts\\build.ps1"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
