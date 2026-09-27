@@ -22,6 +22,13 @@ Push-Location $workspaceRoot
 try {
     $relativeOutputPath = "prototypes\$iterationName"
     $webViewNativePath = & (Join-Path $PSScriptRoot 'restore-webview2.ps1')
+    $resourcePath = Join-Path $relativeOutputPath 'AppResources.res'
+    $rcArguments = @(
+        '/nologo',
+        ('/fo' + $resourcePath),
+        'data\AppResources.rc'
+    )
+
     $arguments = @(
         '/Zi',
         '/EHsc',
@@ -42,6 +49,7 @@ try {
         'bin\CurrencyRates.cpp',
         '/link',
         ('/LIBPATH:' + (Join-Path $webViewNativePath 'x64')),
+        $resourcePath,
         'User32.lib',
         'Gdi32.lib',
         'Ole32.lib',
@@ -54,6 +62,16 @@ try {
     $logPath = Join-Path $iterationPath 'build.log'
     "Build iteration $nextIteration started at $(Get-Date -Format o)" |
         Set-Content -LiteralPath $logPath
+
+    $rcOutput = & rc.exe @rcArguments 2>&1
+    $rcExitCode = $LASTEXITCODE
+    $rcOutput | Tee-Object -FilePath $logPath -Append
+    if ($rcExitCode -ne 0) {
+        "Resource compilation failed with exit code $rcExitCode." |
+            Add-Content -LiteralPath $logPath
+        Write-Error "Resource compilation failed. See $logPath"
+        exit $rcExitCode
+    }
 
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'

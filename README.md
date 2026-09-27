@@ -7,7 +7,7 @@ This widget is created as a way to make it easy for people to save money, also i
 
 ## Themes
 
-Add a `.css` file to [Theme/](Theme/README.md). The app discovers themes at startup and lets you select one from the theme menu.
+Add a theme folder to [Theme/](Theme/README.md). The app discovers themes at startup and lets you select one from the theme menu.
 
 ## Build and fallback
 

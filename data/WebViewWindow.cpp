@@ -16,6 +16,8 @@
 
 #include <winrt/Windows.Data.Json.h>
 
+#include "Resource.h"
+
 #pragma comment(lib, "Ole32.lib")
 
 namespace {
@@ -83,11 +85,11 @@ std::wstring EscapeJson(const std::wstring& value) {
     return escaped;
 }
 
-bool IsValidThemeFilename(const std::wstring& filename) {
-    if (filename.size() < 5 || filename.substr(filename.size() - 4) != L".css") {
+bool IsValidThemeName(const std::wstring& name) {
+    if (name.empty()) {
         return false;
     }
-    return std::all_of(filename.begin(), filename.end() - 4,
+    return std::all_of(name.begin(), name.end(),
                        [](wchar_t character) {
                            return (character >= L'a' && character <= L'z') ||
                                   (character >= L'A' && character <= L'Z') ||
@@ -145,6 +147,8 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         windowClass.lpszClassName = kWindowClass;
         windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
         windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        windowClass.hIcon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APPICON));
+        windowClass.hIconSm = windowClass.hIcon;
         if (!RegisterClassExW(&windowClass) &&
             GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
             return false;
@@ -823,12 +827,17 @@ std::vector<std::wstring> WebViewWindow::FindThemes() const {
     const auto themeDirectory = workspaceRoot / L"Theme";
     for (std::filesystem::directory_iterator iterator(themeDirectory, error), end;
          !error && iterator != end; iterator.increment(error)) {
-        if (!iterator->is_regular_file(error) || error) {
+        if (!iterator->is_directory(error) || error) {
             continue;
         }
-        const std::wstring filename = iterator->path().filename().wstring();
-        if (IsValidThemeFilename(filename)) {
-            themes.push_back(filename);
+        const std::wstring name = iterator->path().filename().wstring();
+        if (!IsValidThemeName(name)) {
+            continue;
+        }
+        std::error_code cssError;
+        const auto cssPath = iterator->path() / (name + L".css");
+        if (std::filesystem::is_regular_file(cssPath, cssError) && !cssError) {
+            themes.push_back(name);
         }
     }
 
@@ -837,7 +846,7 @@ std::vector<std::wstring> WebViewWindow::FindThemes() const {
 }
 
 void WebViewWindow::LoadSelectedTheme() {
-    selectedTheme_ = L"default.css";
+    selectedTheme_ = L"default";
     const auto workspaceRoot = GetWorkspaceRoot();
     if (workspaceRoot.empty()) {
         return;

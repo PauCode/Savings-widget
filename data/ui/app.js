@@ -98,7 +98,7 @@ function setThemeOptions(themes, selectedTheme) {
     themes.forEach((theme) => {
         const option = document.createElement("option");
         option.value = theme;
-        option.textContent = theme.replace(/\.css$/i, "");
+        option.textContent = theme;
         themeSelect.append(option);
     });
     themeSelect.value = selectedTheme;
@@ -167,7 +167,7 @@ function renderState(state) {
     }
 
     if (state.selectedTheme) {
-        themeStylesheet.href = `/Theme/${encodeURIComponent(state.selectedTheme)}`;
+        themeStylesheet.href = `/Theme/${encodeURIComponent(state.selectedTheme)}/${encodeURIComponent(state.selectedTheme)}.css`;
     }
 
     if (state.goals) {

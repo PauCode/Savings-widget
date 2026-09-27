@@ -85,7 +85,7 @@ private:
     GoalManager goalManager_;
     CurrencyRates currencyRates_;
     std::vector<std::wstring> themes_;
-    std::wstring selectedTheme_ = L"default.css";
+    std::wstring selectedTheme_ = L"default";
     std::wstring selectedCurrency_ = L"USD";
     std::wstring status_;
     bool ratesLoading_ = true;

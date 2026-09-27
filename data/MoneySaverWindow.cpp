@@ -13,6 +13,8 @@
 
 #include <commctrl.h>
 
+#include "Resource.h"
+
 #pragma comment(lib, "Comctl32.lib")
 
 namespace {
@@ -48,6 +50,8 @@ int NativeFallbackWindow::Run(HINSTANCE instance, int showCommand) {
     windowClass.lpszClassName = kWindowClass;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+    windowClass.hIcon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APPICON));
+    windowClass.hIconSm = windowClass.hIcon;
 
     if (!RegisterClassExW(&windowClass)) {
         return 1;
