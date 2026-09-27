@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <iterator>
 #include <sstream>
+#include <utility>
 
 #include <commctrl.h>
 
@@ -18,10 +19,10 @@ constexpr wchar_t kWindowClass[] = L"MoneySavingWidgetWindow";
 constexpr int kGoalCents = 100000;
 constexpr int kAmountEditId = 1001;
 
-std::wstring FormatMoney(int cents) {
+std::wstring FormatMoney(double amount, const wchar_t* currencyCode) {
     std::wostringstream text;
-    text << L"$" << cents / 100 << L"." << std::setw(2)
-         << std::setfill(L'0') << cents % 100;
+    text << std::fixed << std::setprecision(2) << amount
+         << L" " << currencyCode;
     return text.str();
 }
 } // namespace
@@ -51,7 +52,7 @@ int MoneySaverWindow::Run(HINSTANCE instance, int showCommand) {
 
     constexpr DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
     constexpr DWORD extendedStyle = WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    RECT bounds{0, 0, 320, 220};
+    RECT bounds{0, 0, 320, 270};
     AdjustWindowRectEx(&bounds, style, FALSE, extendedStyle);
 
     window_ = CreateWindowExW(
@@ -63,6 +64,7 @@ int MoneySaverWindow::Run(HINSTANCE instance, int showCommand) {
         return 1;
     }
 
+    StartRatesFetch();
     ShowWindow(window_, showCommand);
     UpdateWindow(window_);
 
@@ -105,11 +107,22 @@ LRESULT MoneySaverWindow::HandleMessage(
         return 0;
 
     case WM_COMMAND:
+        {
+            int presetAmountRon = 0;
+            if (presetDepositButtons_.GetAmountForClick(wParam, presetAmountRon)) {
+                AddDeposit(static_cast<double>(presetAmountRon), false);
+                return 0;
+            }
+        }
         if (depositButton_.WasClicked(wParam)) {
             AddDeposit();
             return 0;
         }
         break;
+
+    case kRatesLoadedMessage:
+        HandleRatesLoaded();
+        return 0;
 
     case WM_DESTROY:
         PostQuitMessage(0);
@@ -125,17 +138,17 @@ bool MoneySaverWindow::CreateControls() {
     savedLabel_ = CreateWindowW(
         L"STATIC", L"", WS_CHILD | WS_VISIBLE,
         20, 18, 280, 24, window_, nullptr, nullptr, nullptr);
-    HWND goalLabel = CreateWindowW(
-        L"STATIC", L"Goal: $1,000.00", WS_CHILD | WS_VISIBLE,
+    goalLabel_ = CreateWindowW(
+        L"STATIC", L"", WS_CHILD | WS_VISIBLE,
         20, 48, 280, 20, window_, nullptr, nullptr, nullptr);
 
-    if (!savedLabel_ || !goalLabel || !progress_.Create(window_, font_)) {
+    if (!savedLabel_ || !goalLabel_ || !progress_.Create(window_, font_)) {
         return false;
     }
 
     HWND depositLabel = CreateWindowW(
-        L"STATIC", L"Add a deposit:", WS_CHILD | WS_VISIBLE,
-        20, 108, 100, 20, window_, nullptr, nullptr, nullptr);
+        L"STATIC", L"Add a deposit (RON):", WS_CHILD | WS_VISIBLE,
+        20, 108, 160, 20, window_, nullptr, nullptr, nullptr);
     amountEdit_ = CreateWindowExW(
         WS_EX_CLIENTEDGE, L"EDIT", L"25.00",
         WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
@@ -144,24 +157,98 @@ bool MoneySaverWindow::CreateControls() {
         nullptr, nullptr);
     statusLabel_ = CreateWindowW(
         L"STATIC", L"", WS_CHILD | WS_VISIBLE,
-        20, 170, 280, 24, window_, nullptr, nullptr, nullptr);
+        20, 230, 280, 28, window_, nullptr, nullptr, nullptr);
+    HWND presetLabel = CreateWindowW(
+        L"STATIC", L"Quick add (RON):", WS_CHILD | WS_VISIBLE,
+        20, 168, 280, 20, window_, nullptr, nullptr, nullptr);
 
-    if (!depositLabel || !amountEdit_ || !statusLabel_ ||
-        !depositButton_.Create(window_, font_)) {
+    if (!depositLabel || !amountEdit_ || !statusLabel_ || !presetLabel ||
+        !depositButton_.Create(window_, font_) ||
+        !presetDepositButtons_.Create(window_, font_)) {
         return false;
     }
 
-    for (HWND control : {savedLabel_, amountEdit_, statusLabel_}) {
+    for (HWND control : {savedLabel_, goalLabel_, amountEdit_,
+                         statusLabel_, presetLabel}) {
         SendMessageW(control, WM_SETFONT, reinterpret_cast<WPARAM>(font_), TRUE);
     }
     return true;
 }
 
+void MoneySaverWindow::StartRatesFetch() {
+    ratesFetchState_ = std::make_shared<RatesFetchState>();
+    const auto state = ratesFetchState_;
+    const HWND window = window_;
+
+    try {
+        std::thread([state, window] {
+            CurrencyRates rates;
+            const bool succeeded = rates.FetchLatestRates();
+            {
+                std::lock_guard<std::mutex> lock(state->mutex);
+                state->succeeded = succeeded;
+                if (succeeded) {
+                    state->rates = std::move(rates);
+                }
+                state->completed = true;
+            }
+            PostMessageW(window, kRatesLoadedMessage, 0, 0);
+        }).detach();
+    } catch (const std::system_error&) {
+        ratesLoading_ = false;
+        UpdateDisplay();
+    }
+}
+
+void MoneySaverWindow::HandleRatesLoaded() {
+    if (!ratesFetchState_) {
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(ratesFetchState_->mutex);
+        if (!ratesFetchState_->completed) {
+            return;
+        }
+        ratesAvailable_ = ratesFetchState_->succeeded;
+        if (ratesAvailable_) {
+            currencyRates_ = std::move(ratesFetchState_->rates);
+        }
+    }
+
+    ratesLoading_ = false;
+    UpdateDisplay();
+}
+
 void MoneySaverWindow::UpdateDisplay() {
     const int savedCents = savingsData_.GetSavedCents();
-    SetWindowTextW(
-        savedLabel_, (L"Saved: " + FormatMoney(savedCents)).c_str());
     progress_.Update(savedCents, kGoalCents);
+
+    if (!ratesAvailable_) {
+        SetWindowTextW(savedLabel_, L"Saved: waiting for RON rates");
+        SetWindowTextW(goalLabel_, L"Goal: waiting for RON rates");
+        SetWindowTextW(
+            statusLabel_, ratesLoading_
+                             ? L"Loading current RON rates..."
+                             : L"RON rates unavailable. Deposits are disabled.");
+        return;
+    }
+
+    const auto savedRon = currencyRates_.Convert(
+        savedCents / 100.0, "USD", "RON");
+    const auto goalRon = currencyRates_.Convert(
+        kGoalCents / 100.0, "USD", "RON");
+    if (!savedRon || !goalRon) {
+        SetWindowTextW(savedLabel_, L"Saved: conversion unavailable");
+        SetWindowTextW(goalLabel_, L"Goal: conversion unavailable");
+        SetWindowTextW(statusLabel_, L"Could not convert the current balance.");
+        return;
+    }
+
+    SetWindowTextW(
+        savedLabel_, (L"Saved: " + FormatMoney(*savedRon, L"RON")).c_str());
+    SetWindowTextW(
+        goalLabel_, (L"Goal: " + FormatMoney(*goalRon, L"RON")).c_str());
     SetWindowTextW(
         statusLabel_, savedCents >= kGoalCents
                           ? L"Goal reached. Great work!"
@@ -179,13 +266,30 @@ void MoneySaverWindow::AddDeposit() {
     }
 
     if (end == buffer || (end && *end != L'\0')) {
-        SetWindowTextW(statusLabel_, L"Enter a valid amount greater than $0.");
+        SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
         return;
     }
 
-    const DepositResult result = savingsData_.AddDeposit(amount);
+    AddDeposit(amount, true);
+}
+
+void MoneySaverWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
+    if (!ratesAvailable_) {
+        SetWindowTextW(statusLabel_, ratesLoading_
+                                         ? L"RON rates are still loading."
+                                         : L"RON rates are unavailable.");
+        return;
+    }
+
+    const auto amountUsd = currencyRates_.Convert(amountRon, "RON", "USD");
+    if (!amountUsd || *amountUsd <= 0.0) {
+        SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
+        return;
+    }
+
+    const DepositResult result = savingsData_.AddDeposit(*amountUsd);
     if (result == DepositResult::InvalidAmount) {
-        SetWindowTextW(statusLabel_, L"Enter a valid amount greater than $0.");
+        SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
         return;
     }
     if (result == DepositResult::TooLarge) {
@@ -197,7 +301,11 @@ void MoneySaverWindow::AddDeposit() {
         return;
     }
 
-    SetWindowTextW(amountEdit_, L"");
+    if (clearAmountEdit) {
+        SetWindowTextW(amountEdit_, L"");
+    }
     UpdateDisplay();
-    SetFocus(amountEdit_);
+    if (clearAmountEdit) {
+        SetFocus(amountEdit_);
+    }
 }

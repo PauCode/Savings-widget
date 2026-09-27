@@ -33,6 +33,7 @@ try {
         'data\MoneySaverWindow.cpp',
         'data\DepositButton.cpp',
         'data\SavingsProgress.cpp',
+        'data\PresetDepositButtons.cpp',
         'bin\SavingsData.cpp',
         'bin\CurrencyRates.cpp',
         '/link',
