@@ -298,7 +298,7 @@ select:focus-visible {
 
 .savings-view {
     display: grid;
-    grid-template-columns: minmax(250px, 0.85fr) minmax(390px, 1.5fr);
+    grid-template-columns: minmax(260px, 0.95fr) minmax(390px, 1.4fr);
     gap: clamp(26px, 6vw, 86px);
     align-items: center;
     margin-top: 1.625rem;
@@ -310,12 +310,13 @@ select:focus-visible {
     justify-items: center;
     align-content: center;
     min-height: 25rem;
+    height: 100%;
 }
 
 .jar-scene {
     position: relative;
-    width: clamp(10rem, 21vw, 15.5rem);
-    height: clamp(15.25rem, 30vw, 22.5rem);
+    width: clamp(12rem, 26vw, 20rem);
+    height: clamp(18rem, 38vw, 30rem);
     padding-top: 1.6875rem;
 }
 

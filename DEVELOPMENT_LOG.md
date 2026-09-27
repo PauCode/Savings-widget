@@ -55,6 +55,9 @@
 - Validation: iteration 55 built successfully and the WebView window launched responsively.
 - Enlarged the jar (`.jar-panel`/`.jar-scene` clamp ranges) and made the whole WebView UI scale with window size: added a fluid `clamp()` root font-size and converted most font-size/padding/gap/margin declarations across the layout to `rem` so they grow together, widened the `.app-shell` cap from 1120px to 1320px, and increased the default native window size to 1280x840 to match. `wave-view.js` already resizes the liquid canvas via `ResizeObserver`, so the jar's wave rendering adapts automatically to the new size without changes.
 - Validation: iteration 56 built successfully and the WebView window launched responsively at the larger default size.
+- Enlarged the jar further (`.jar-scene` clamp width/height raised substantially, `.savings-view` grid gives the jar column a bigger share) since the account panel's taller content left unused space around it. Sped up `wave-view.js`: wave phase speed roughly tripled and amplitude roughly doubled so the surface is visibly animated instead of near-static, and the fill-level spring (progress acceleration/damping) was tightened so the liquid catches up to deposits/withdrawals noticeably faster.
+- Validation: iteration 57 built successfully and the WebView window launched responsively.
+
 
 
 

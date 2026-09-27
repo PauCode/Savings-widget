@@ -83,12 +83,12 @@ class WaveView {
             : 1 / frameRate;
         this.lastFrameTime = time;
         this.lastDrawTime = time;
-        this.phase += delta * 1.25;
+        this.phase += delta * 3.4;
         this.waveImpulse *= Math.exp(-5.5 * delta);
 
-        const acceleration = (this.targetProgress - this.progress) * 42;
+        const acceleration = (this.targetProgress - this.progress) * 95;
         this.progressVelocity = (this.progressVelocity + acceleration * delta) *
-            Math.exp(-9 * delta);
+            Math.exp(-11 * delta);
         this.progress += this.progressVelocity * delta;
         if (Math.abs(this.targetProgress - this.progress) < 0.02 &&
             Math.abs(this.progressVelocity) < 0.1) {
@@ -139,7 +139,7 @@ class WaveView {
         context.clip();
 
         context.beginPath();
-        const amplitude = Math.min(2.4, this.height * 0.012) +
+        const amplitude = Math.min(5, this.height * 0.024) +
             Math.min(3, Math.abs(this.waveImpulse));
         for (let x = left; x <= right; x += 3) {
             const ratio = (x - left) / (right - left);
