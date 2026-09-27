@@ -9,18 +9,20 @@
                 "/EHsc",
                 "/nologo",
                 "/std:c++17",
-                "/Fe${workspaceFolder}\\MoneySavingWidget.exe",
-                "${workspaceFolder}\\MoneySavingWidgetPrototype.cpp",
-                "${workspaceFolder}\\MoneySaverWindow.cpp",
-                "${workspaceFolder}\\DepositButton.cpp",
-                "${workspaceFolder}\\SavingsProgress.cpp",
-                "${workspaceFolder}\\SavingsData.cpp",
+                "/Fo${workspaceFolder}\\prototypes\\",
+                "/Fd${workspaceFolder}\\prototypes\\MoneySavingWidgetCompiler.pdb",
+                "/Fe${workspaceFolder}\\prototypes\\MoneySavingWidget.exe",
+                "${workspaceFolder}\\data\\MoneySavingWidgetPrototype.cpp",
+                "${workspaceFolder}\\data\\MoneySaverWindow.cpp",
+                "${workspaceFolder}\\data\\DepositButton.cpp",
+                "${workspaceFolder}\\data\\SavingsProgress.cpp",
+                "${workspaceFolder}\\bin\\SavingsData.cpp",
                 "/link",
                 "User32.lib",
                 "Gdi32.lib"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$msCompile"

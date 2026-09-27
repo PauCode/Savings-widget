@@ -15,14 +15,15 @@ std::filesystem::path GetBinaryDataFilePath() {
     }
 
     return std::filesystem::path(exePath).parent_path()
-        / L"Data" / L"savings.dat";
+        / L"current" / L"savings.dat";
 }
 
 std::filesystem::path GetLegacyDataFilePath() {
     const auto binaryPath = GetBinaryDataFilePath();
     return binaryPath.empty()
         ? std::filesystem::path{}
-        : binaryPath.parent_path() / L"savings.txt";
+        : binaryPath.parent_path().parent_path()
+            / L"Data" / L"savings.txt";
 }
 
 bool ReadBinaryBalance(

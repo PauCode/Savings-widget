@@ -28,7 +28,7 @@ std::wstring FormatMoney(int cents) {
 
 int MoneySaverWindow::Run(HINSTANCE instance, int showCommand) {
     if (!savingsData_.Load()) {
-        MessageBoxW(nullptr, L"Could not load Data\\savings.txt.",
+        MessageBoxW(nullptr, L"Could not load current\\savings.dat.",
                     L"Money Saver", MB_OK | MB_ICONERROR);
         return 1;
     }

@@ -3,7 +3,7 @@
 #include <windows.h>
 
 #include "DepositButton.h"
-#include "SavingsData.h"
+#include "../bin/SavingsData.h"
 #include "SavingsProgress.h"
 
 class MoneySaverWindow {
