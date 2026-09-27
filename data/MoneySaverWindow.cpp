@@ -3,6 +3,7 @@
 
 #include "MoneySaverWindow.h"
 
+#include <cmath>
 #include <cwchar>
 #include <cwctype>
 #include <iomanip>
@@ -30,9 +31,8 @@ std::wstring FormatMoney(double amount, const wchar_t* currencyCode) {
 } // namespace
 
 int NativeFallbackWindow::Run(HINSTANCE instance, int showCommand) {
-    if (!savingsData_.Load() ||
-        !savingsData_.LoadGoalCents(goalUsdCents_, goalRonCents_)) {
-        MessageBoxW(nullptr, L"Could not load current\\savings.dat.",
+    if (!goalManager_.Load()) {
+        MessageBoxW(nullptr, L"Could not load savings data.",
                     L"Money Saver", MB_OK | MB_ICONERROR);
         return 1;
     }
@@ -259,12 +259,28 @@ void NativeFallbackWindow::HandleRatesLoaded() {
     }
 
     ratesLoading_ = false;
+    FinalizeDefaultGoalIfNeeded();
     UpdateDisplay();
 }
 
+void NativeFallbackWindow::FinalizeDefaultGoalIfNeeded() {
+    if (!ratesAvailable_ || goalManager_.GetActiveGoalTargetRonCents() > 0) {
+        return;
+    }
+
+    const auto defaultGoalRon = currencyRates_.Convert(1000.0, "USD", "RON");
+    if (!defaultGoalRon || *defaultGoalRon <= 0.0) {
+        return;
+    }
+
+    goalManager_.SetActiveGoalTargetRonCents(
+        static_cast<int>(std::lround(*defaultGoalRon * 100.0)));
+}
+
 void NativeFallbackWindow::UpdateDisplay() {
-    const int savedCents = savingsData_.GetSavedCents();
-    progress_.Update(savedCents, goalUsdCents_);
+    const int savedCents = goalManager_.GetActiveSavedCents();
+    const int targetRonCents = goalManager_.GetActiveGoalTargetRonCents();
+    progress_.Update(savedCents, targetRonCents > 0 ? targetRonCents : 1);
 
     if (!ratesAvailable_) {
         SetWindowTextW(savedLabel_, L"Saved: waiting for RON rates");
@@ -278,24 +294,23 @@ void NativeFallbackWindow::UpdateDisplay() {
 
     const auto savedRon = currencyRates_.Convert(
         savedCents / 100.0, "USD", "RON");
-    const auto convertedGoalRon = goalRonCents_ <= 0
-        ? currencyRates_.Convert(goalUsdCents_ / 100.0, "USD", "RON")
-        : std::optional<double>{};
-    if (!savedRon || (goalRonCents_ <= 0 && !convertedGoalRon)) {
+    if (!savedRon || targetRonCents <= 0) {
         SetWindowTextW(savedLabel_, L"Saved: conversion unavailable");
         SetWindowTextW(goalLabel_, L"Goal: conversion unavailable");
         SetWindowTextW(statusLabel_, L"Could not convert the current balance.");
         return;
     }
 
+    const int savedRonCents = static_cast<int>(std::lround(*savedRon * 100.0));
+    progress_.Update(savedRonCents, targetRonCents);
+
     SetWindowTextW(
         savedLabel_, (L"Saved: " + FormatMoney(*savedRon, L"RON")).c_str());
     SetWindowTextW(
         goalLabel_, (L"Goal: " + FormatMoney(
-            goalRonCents_ > 0 ? goalRonCents_ / 100.0 : *convertedGoalRon,
-            L"RON")).c_str());
+            targetRonCents / 100.0, L"RON")).c_str());
     SetWindowTextW(
-        statusLabel_, savedCents >= goalUsdCents_
+        statusLabel_, savedRonCents >= targetRonCents
                           ? L"Goal reached. Great work!"
                           : isAdding_ ? L"Every deposit gets you closer."
                                       : L"Remove funds when you need them.");
@@ -334,8 +349,8 @@ void NativeFallbackWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
     }
 
     const DepositResult result = isAdding_
-        ? savingsData_.AddDeposit(*amountUsd)
-        : savingsData_.RemoveFunds(*amountUsd);
+        ? goalManager_.AddDeposit(*amountUsd, amountRon)
+        : goalManager_.RemoveFunds(*amountUsd, amountRon);
     if (result == DepositResult::InvalidAmount) {
         SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
         return;
@@ -384,7 +399,7 @@ void NativeFallbackWindow::ResetSavings() {
         return;
     }
 
-    if (!savingsData_.Reset()) {
+    if (!goalManager_.ResetActiveGoal()) {
         SetWindowTextW(statusLabel_, L"Could not reset savings.");
         return;
     }

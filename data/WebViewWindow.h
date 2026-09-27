@@ -12,7 +12,7 @@
 #include <wrl.h>
 
 #include "../bin/CurrencyRates.h"
-#include "../bin/SavingsData.h"
+#include "../bin/GoalManager.h"
 
 class WebViewWindow {
 public:
@@ -51,8 +51,11 @@ private:
     void HandleDeposit(double amountRon);
     void HandleWithdrawal(double amountRon);
     void HandleReset();
-    void HandleGoalChange(double amountRon);
+    void HandleGoalTargetChange(double amountRon);
+    void HandleGoalSelect(const std::wstring& id);
+    void HandleGoalCreate(const std::wstring& name, double targetRon);
     void HandleThemeSelection(const std::wstring& filename);
+    void FinalizeDefaultGoalIfNeeded();
     void StartRatesFetch();
     void SendState(const std::wstring& status = {});
     void RequestFallback();
@@ -71,10 +74,8 @@ private:
     EventRegistrationToken navigationCompletedToken_{};
     std::shared_ptr<CallbackLifetime> callbackLifetime_;
     std::shared_ptr<RatesFetchState> ratesFetchState_;
-    SavingsData savingsData_;
+    GoalManager goalManager_;
     CurrencyRates currencyRates_;
-    int goalUsdCents_ = SavingsData::kDefaultGoalCents;
-    int goalRonCents_ = 0;
     std::vector<std::wstring> themes_;
     std::wstring selectedTheme_ = L"default.css";
     std::wstring status_;

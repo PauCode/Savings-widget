@@ -36,3 +36,13 @@
 - Added a configurable RON savings target persisted with both exact RON cents and its USD-equivalent cents. Legacy four-byte goal files still load, but cannot recover the original RON cents; re-saving the target stores exact precision. Restricted quick-deposit label updates to actual preset buttons, preventing the goal dialog's Cancel button from showing `NaN`.
 - Validation: iteration 48 built successfully and the goal-editing WebView launched responsively with clear diagnostics.
 - Added a WebView goal editor in RON. The selected target is converted to USD cents and persisted in `current/goal.dat`; missing files default to $1,000, and the native fallback loads the same target. Validation: iteration 45 built successfully, diagnostics were clear, and the updated app launched responsively.
+
+## 2026-10-XX
+
+- Added multi-goal ("jars") support. `bin/GoalManager.h/.cpp` now owns the list of savings goals, the active goal, and per-goal history, backed by `current/goals/<id>/{savings.dat,goal.dat,history.log}` and `current/goals/index.txt`. On first run it migrates the previous single-goal `current/savings.dat` + `current/goal.dat` (and legacy `Data/savings.txt`) into a `default` goal.
+- Simplified `bin/SavingsData` to a plain balance store parametrized by directory (`Load(directory)`); it no longer knows about goals, legacy migration, or currencies, since `GoalManager` now owns that logic.
+- Savings targets are stored purely in RON cents per goal (no more USD/RON dual-storage), avoiding the earlier currency round-trip precision issue. A brand-new goal's target is finalized to a RON-equivalent of $1,000 the first time exchange rates load.
+- The WebView UI (`data/ui/index.html`/`app.js`) gained a goal-pill selector row with a "+ New jar" action (opens a name/target dialog posting a `createGoal` message) and a transaction history panel listing recent deposits/withdrawals/resets per goal, driven by new `selectGoal`/`createGoal` WebView messages and a `goals`/`activeGoalId`/`activeGoalName`/`history` payload in `SendState()`. The jar/wave visualization (`wave-view.js`) was not touched.
+- `data/MoneySaverWindow` (native fallback) was updated to use `GoalManager` as well, but keeps operating on whichever goal is currently active in the shared data files (no goal-selector UI in the native fallback).
+- Updated `scripts/build.ps1` to compile the new `bin/GoalManager.cpp`.
+- Validation: iteration 49 built successfully; the WebView window launched responsively and the migration correctly created `current/goals/default/` with the pre-existing balance/goal, generating a valid `current/goals/index.txt`.

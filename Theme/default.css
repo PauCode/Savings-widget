@@ -153,6 +153,108 @@ select:focus-visible {
     background: var(--panel);
 }
 
+.goal-selector {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+    margin: 22px 0 0;
+}
+
+.goal-pill {
+    min-height: 34px;
+    padding: 0 16px;
+    border: 1px solid var(--panel-edge);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 650;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.goal-pill:hover {
+    border-color: var(--accent);
+}
+
+.goal-pill.is-active {
+    border-color: var(--accent-strong);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.goal-pill-add {
+    color: var(--accent);
+    border-style: dashed;
+}
+
+.history-panel {
+    margin-top: 26px;
+    padding: clamp(20px, 3vw, 28px);
+    border: 1px solid var(--panel-edge);
+    border-radius: 16px;
+    background: linear-gradient(145deg, var(--panel-raised), var(--panel) 65%);
+}
+
+.history-panel .section-heading {
+    margin-bottom: 11px;
+}
+
+.history-panel h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 620;
+}
+
+.history-list {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+    border: 1px solid var(--panel-edge);
+    border-radius: 9px;
+    background: var(--field);
+    font-size: 13px;
+}
+
+.history-label {
+    font-weight: 620;
+}
+
+.history-date {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.history-amount {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.history-amount.deposit {
+    color: var(--accent);
+}
+
+.history-amount.withdraw {
+    color: var(--danger);
+}
+
+.history-empty {
+    margin: 6px 2px 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
 .savings-view {
     display: grid;
     grid-template-columns: minmax(230px, 0.78fr) minmax(390px, 1.5fr);

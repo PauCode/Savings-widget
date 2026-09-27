@@ -38,6 +38,7 @@ try {
         'data\SavingsProgress.cpp',
         'data\PresetDepositButtons.cpp',
         'bin\SavingsData.cpp',
+        'bin\GoalManager.cpp',
         'bin\CurrencyRates.cpp',
         '/link',
         ('/LIBPATH:' + (Join-Path $webViewNativePath 'x64')),

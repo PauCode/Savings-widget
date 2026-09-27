@@ -1,0 +1,66 @@
+#pragma once
+
+#include <cstddef>
+#include <string>
+#include <vector>
+
+#include "SavingsData.h"
+
+struct GoalInfo {
+    std::wstring id;
+    std::wstring name;
+};
+
+struct GoalHistoryEntry {
+    long long timestampMillis = 0;
+    std::wstring type; // "deposit" | "withdraw" | "reset"
+    int amountRonCents = 0;
+};
+
+// Owns the list of savings goals ("jars"), the currently active goal, and
+// the balance/target/history for that active goal. Every goal is backed by
+// its own directory under current/goals/<id>/ containing:
+//   savings.dat  - 4-byte balance in USD cents (SavingsData format)
+//   goal.dat     - 4-byte target in RON cents
+//   history.log  - append-only "<millis>|<type>|<ronCents>" text lines
+// current/goals/index.txt tracks the active goal id and the goal list.
+// On first run this migrates any pre-existing single-goal data
+// (current/savings.dat, current/goal.dat, Data/savings.txt) into a
+// "default" goal.
+class GoalManager {
+public:
+    bool Load();
+
+    const std::vector<GoalInfo>& GetGoals() const noexcept;
+    const std::wstring& GetActiveGoalId() const noexcept;
+    const std::wstring& GetActiveGoalName() const noexcept;
+
+    bool SelectGoal(const std::wstring& id);
+    bool CreateGoal(const std::wstring& name, int targetRonCents, std::wstring& newId);
+
+    int GetActiveGoalTargetRonCents() const noexcept;
+    bool SetActiveGoalTargetRonCents(int targetRonCents);
+
+    int GetActiveSavedCents() const noexcept;
+    DepositResult AddDeposit(double amountUsd, double amountRon);
+    DepositResult RemoveFunds(double amountUsd, double amountRon);
+    bool ResetActiveGoal();
+
+    std::vector<GoalHistoryEntry> GetActiveHistory(std::size_t maxEntries) const;
+
+private:
+    bool EnsureMigrated();
+    bool LoadIndex();
+    bool SaveIndex() const;
+    bool LoadActiveGoalData(const std::wstring& id);
+    bool LoadGoalTarget(const std::wstring& id, int& targetRonCents) const;
+    bool SaveGoalTarget(const std::wstring& id, int targetRonCents) const;
+    void RecordHistory(const wchar_t* type, int amountRonCents) const;
+    std::wstring MakeGoalId() const;
+
+    std::vector<GoalInfo> goals_;
+    std::wstring activeId_;
+    std::wstring activeName_;
+    int activeTargetRonCents_ = 0;
+    SavingsData activeSavings_;
+};

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 enum class DepositResult {
     Added,
     Removed,
@@ -9,23 +11,22 @@ enum class DepositResult {
     SaveFailed
 };
 
+// Stores a single balance (in cents) inside a given directory as
+// "savings.dat". Each savings goal owns its own SavingsData instance
+// pointed at its own goal directory (see GoalManager).
 class SavingsData {
 public:
-    static constexpr int kDefaultGoalCents = 100000;
-    static constexpr int kMaximumGoalCents = 100000000;
+    static constexpr int kMaximumSavedCents = 100000000;
 
-    bool Load();
+    bool Load(const std::filesystem::path& directory);
     int GetSavedCents() const noexcept;
     DepositResult AddDeposit(double amount);
     DepositResult RemoveFunds(double amount);
     bool Reset();
-    bool LoadGoalCents(int& goalUsdCents, int& displayRonCents) const;
-    bool SaveGoalCents(int goalUsdCents, int displayRonCents) const;
 
 private:
-    static constexpr int kMaximumSavedCents = kMaximumGoalCents;
-
     bool Save(int savedCents) const;
 
+    std::filesystem::path directory_;
     int savedCents_ = 0;
 };

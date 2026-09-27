@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -106,8 +107,7 @@ WebViewWindow::~WebViewWindow() {
 }
 
 bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
-    if (!savingsData_.Load() ||
-        !savingsData_.LoadGoalCents(goalUsdCents_, goalRonCents_)) {
+    if (!goalManager_.Load()) {
         return false;
     }
 
@@ -383,7 +383,13 @@ void WebViewWindow::HandleWebMessage(
         } else if (type == L"reset") {
             HandleReset();
         } else if (type == L"goal") {
-            HandleGoalChange(message.GetNamedNumber(L"amountRon"));
+            HandleGoalTargetChange(message.GetNamedNumber(L"amountRon"));
+        } else if (type == L"selectGoal") {
+            HandleGoalSelect(std::wstring(message.GetNamedString(L"id")));
+        } else if (type == L"createGoal") {
+            HandleGoalCreate(
+                std::wstring(message.GetNamedString(L"name")),
+                message.GetNamedNumber(L"targetRon"));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -432,7 +438,22 @@ void WebViewWindow::HandleRatesLoaded() {
         }
     }
     ratesLoading_ = false;
+    FinalizeDefaultGoalIfNeeded();
     SendState();
+}
+
+void WebViewWindow::FinalizeDefaultGoalIfNeeded() {
+    if (!ratesAvailable_ || goalManager_.GetActiveGoalTargetRonCents() > 0) {
+        return;
+    }
+
+    const auto defaultGoalRon = currencyRates_.Convert(1000.0, "USD", "RON");
+    if (!defaultGoalRon || *defaultGoalRon <= 0.0) {
+        return;
+    }
+
+    goalManager_.SetActiveGoalTargetRonCents(
+        static_cast<int>(std::lround(*defaultGoalRon * 100.0)));
 }
 
 void WebViewWindow::HandleDeposit(double amountRon) {
@@ -448,7 +469,7 @@ void WebViewWindow::HandleDeposit(double amountRon) {
         return;
     }
 
-    const DepositResult result = savingsData_.AddDeposit(*amountUsd);
+    const DepositResult result = goalManager_.AddDeposit(*amountUsd, amountRon);
     switch (result) {
     case DepositResult::InvalidAmount:
         SendState(L"Enter a valid amount greater than 0 RON.");
@@ -481,7 +502,7 @@ void WebViewWindow::HandleWithdrawal(double amountRon) {
         return;
     }
 
-    const DepositResult result = savingsData_.RemoveFunds(*amountUsd);
+    const DepositResult result = goalManager_.RemoveFunds(*amountUsd, amountRon);
     switch (result) {
     case DepositResult::Removed:
         SendState(L"Amount removed.");
@@ -511,7 +532,7 @@ void WebViewWindow::HandleReset() {
         return;
     }
 
-    if (!savingsData_.Reset()) {
+    if (!goalManager_.ResetActiveGoal()) {
         SendState(L"Could not reset savings.");
         return;
     }
@@ -519,35 +540,49 @@ void WebViewWindow::HandleReset() {
     SendState(L"Savings reset.");
 }
 
-void WebViewWindow::HandleGoalChange(double amountRon) {
-    if (!ratesAvailable_) {
-        SendState(L"RON rates are unavailable; the goal was not changed.");
-        return;
-    }
-
-    const auto goalUsd = currencyRates_.Convert(amountRon, "RON", "USD");
-    if (!goalUsd || *goalUsd <= 0.0) {
+void WebViewWindow::HandleGoalTargetChange(double amountRon) {
+    const long targetRonCents = std::lround(amountRon * 100.0);
+    if (targetRonCents <= 0 ||
+        targetRonCents > SavingsData::kMaximumSavedCents) {
         SendState(L"Enter a valid goal greater than 0 RON.");
         return;
     }
 
-    const long goalUsdCents = std::lround(*goalUsd * 100.0);
-    const long goalRonCents = std::lround(amountRon * 100.0);
-    if (goalUsdCents <= 0 || goalUsdCents > SavingsData::kMaximumGoalCents ||
-        goalRonCents <= 0 || goalRonCents > SavingsData::kMaximumGoalCents) {
-        SendState(L"That goal is too large.");
-        return;
-    }
-
-    if (!savingsData_.SaveGoalCents(
-            static_cast<int>(goalUsdCents), static_cast<int>(goalRonCents))) {
+    if (!goalManager_.SetActiveGoalTargetRonCents(static_cast<int>(targetRonCents))) {
         SendState(L"Could not save the new goal.");
         return;
     }
 
-    goalUsdCents_ = static_cast<int>(goalUsdCents);
-    goalRonCents_ = static_cast<int>(goalRonCents);
     SendState(L"Savings goal updated.");
+}
+
+void WebViewWindow::HandleGoalSelect(const std::wstring& id) {
+    if (!goalManager_.SelectGoal(id)) {
+        SendState(L"Could not switch goals.");
+        return;
+    }
+    SendState();
+}
+
+void WebViewWindow::HandleGoalCreate(const std::wstring& name, double targetRon) {
+    const long targetRonCents = std::lround(targetRon * 100.0);
+    if (targetRonCents <= 0 ||
+        targetRonCents > SavingsData::kMaximumSavedCents) {
+        SendState(L"Enter a valid target greater than 0 RON.");
+        return;
+    }
+    if (name.empty()) {
+        SendState(L"Enter a name for the new jar.");
+        return;
+    }
+
+    std::wstring newId;
+    if (!goalManager_.CreateGoal(name, static_cast<int>(targetRonCents), newId)) {
+        SendState(L"Could not create the new jar.");
+        return;
+    }
+
+    SendState(L"New jar created.");
 }
 
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
@@ -564,10 +599,17 @@ void WebViewWindow::SendState(const std::wstring& status) {
         return;
     }
 
+    const int savedCents = goalManager_.GetActiveSavedCents();
+    const int targetRonCents = goalManager_.GetActiveGoalTargetRonCents();
+    const double goalRon = targetRonCents > 0 ? targetRonCents / 100.0 : 0.0;
+    const auto balanceRon = ratesAvailable_
+        ? currencyRates_.Convert(savedCents / 100.0, "USD", "RON")
+        : std::optional<double>{};
+
     if (!status.empty()) {
         status_ = status;
-    } else if (ratesAvailable_) {
-        status_ = savingsData_.GetSavedCents() >= goalUsdCents_
+    } else if (ratesAvailable_ && balanceRon) {
+        status_ = (goalRon > 0.0 && *balanceRon >= goalRon)
             ? L"Goal reached. Great work!"
             : L"Every deposit gets you closer.";
     } else if (ratesLoading_) {
@@ -576,20 +618,9 @@ void WebViewWindow::SendState(const std::wstring& status) {
         status_ = L"RON rates are unavailable. Deposits are disabled.";
     }
 
-    const int savedCents = savingsData_.GetSavedCents();
-    const auto balanceRon = ratesAvailable_
-        ? currencyRates_.Convert(savedCents / 100.0, "USD", "RON")
-        : std::optional<double>{};
-    const auto convertedGoalRon = ratesAvailable_ && goalRonCents_ <= 0
-        ? currencyRates_.Convert(goalUsdCents_ / 100.0, "USD", "RON")
-        : std::optional<double>{};
-    const double goalRon = goalRonCents_ > 0
-        ? goalRonCents_ / 100.0
-        : convertedGoalRon.value_or(0.0);
-    const double rawProgressRatio =
-        goalUsdCents_ > 0
-            ? static_cast<double>(savedCents) * 100.0 / goalUsdCents_
-            : 0.0;
+    const double rawProgressRatio = (balanceRon && goalRon > 0.0)
+        ? *balanceRon * 100.0 / goalRon
+        : 0.0;
     const double progressRatio = rawProgressRatio > 0.0 ? rawProgressRatio : 0.0;
     const double progressPercent = std::clamp(progressRatio, 0.0, 100.0);
 
@@ -610,7 +641,31 @@ void WebViewWindow::SendState(const std::wstring& status) {
                            : std::wstring{})
          << L"\",\"status\":\"" << EscapeJson(status_)
          << L"\",\"selectedTheme\":\"" << EscapeJson(selectedTheme_)
-         << L"\",\"themes\":[";
+         << L"\",\"activeGoalId\":\"" << EscapeJson(goalManager_.GetActiveGoalId())
+         << L"\",\"activeGoalName\":\"" << EscapeJson(goalManager_.GetActiveGoalName())
+         << L"\",\"goals\":[";
+
+    const auto& goals = goalManager_.GetGoals();
+    for (std::size_t index = 0; index < goals.size(); ++index) {
+        if (index > 0) {
+            json << L',';
+        }
+        json << L"{\"id\":\"" << EscapeJson(goals[index].id)
+             << L"\",\"name\":\"" << EscapeJson(goals[index].name) << L"\"}";
+    }
+    json << L"],\"history\":[";
+
+    const auto history = goalManager_.GetActiveHistory(15);
+    for (std::size_t index = 0; index < history.size(); ++index) {
+        if (index > 0) {
+            json << L',';
+        }
+        json << L"{\"timestamp\":" << history[index].timestampMillis
+             << L",\"type\":\"" << EscapeJson(history[index].type)
+             << L"\",\"amountRon\":" << (history[index].amountRonCents / 100.0)
+             << L"}";
+    }
+    json << L"],\"themes\":[";
 
     for (std::size_t index = 0; index < themes_.size(); ++index) {
         if (index > 0) {

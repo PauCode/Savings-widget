@@ -7,7 +7,7 @@
 
 #include "../bin/CurrencyRates.h"
 #include "DepositButton.h"
-#include "../bin/SavingsData.h"
+#include "../bin/GoalManager.h"
 #include "PresetDepositButtons.h"
 #include "SavingsProgress.h"
 
@@ -37,6 +37,7 @@ private:
     void AddDeposit(double amountRon, bool clearAmountEdit);
     void SetMode(bool isAdding);
     void ResetSavings();
+    void FinalizeDefaultGoalIfNeeded();
 
     HINSTANCE instance_ = nullptr;
     HWND window_ = nullptr;
@@ -49,11 +50,9 @@ private:
     HWND statusLabel_ = nullptr;
     HFONT font_ = nullptr;
     bool isAdding_ = true;
-    int goalUsdCents_ = SavingsData::kDefaultGoalCents;
-    int goalRonCents_ = 0;
     bool ratesLoading_ = true;
     bool ratesAvailable_ = false;
-    SavingsData savingsData_;
+    GoalManager goalManager_;
     CurrencyRates currencyRates_;
     std::shared_ptr<RatesFetchState> ratesFetchState_;
     DepositButton depositButton_;

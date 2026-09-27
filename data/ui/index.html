@@ -26,6 +26,11 @@
         </header>
 
         <main>
+            <div class="goal-selector" role="tablist" aria-label="Choose a savings goal">
+                <div class="goal-pills" id="goal-pills"></div>
+                <button id="create-goal-button" class="goal-pill goal-pill-add" type="button">+ New jar</button>
+            </div>
+
             <section class="savings-view" aria-labelledby="goal-title">
                 <div class="jar-panel">
                     <div class="jar-scene" role="img" aria-label="Savings jar showing progress toward the goal">
@@ -41,7 +46,7 @@
 
                 <div class="account-panel">
                     <p class="eyebrow">SAVINGS GOAL</p>
-                    <h2 id="goal-title">A little at a time</h2>
+                    <h2 id="goal-title">Savings Goal</h2>
 
                     <div class="balance-block">
                         <span class="field-label">Current balance</span>
@@ -96,6 +101,14 @@
                     </section>
                 </div>
             </section>
+
+            <section class="history-panel" aria-labelledby="history-title">
+                <div class="section-heading">
+                    <h3 id="history-title">Recent activity</h3>
+                </div>
+                <ul class="history-list" id="history-list"></ul>
+                <p class="history-empty" id="history-empty">No activity yet.</p>
+            </section>
         </main>
         <dialog id="goal-dialog" class="goal-dialog" aria-labelledby="goal-dialog-title">
             <form id="goal-form">
@@ -107,6 +120,21 @@
                 <div class="dialog-actions">
                     <button id="cancel-goal" class="preset-button" type="button">Cancel</button>
                     <button class="primary-button" type="submit">Save goal</button>
+                </div>
+            </form>
+        </dialog>
+        <dialog id="create-goal-dialog" class="goal-dialog" aria-labelledby="create-goal-title">
+            <form id="create-goal-form">
+                <p class="eyebrow">NEW SAVINGS JAR</p>
+                <h2 id="create-goal-title">Create a jar</h2>
+                <label for="create-goal-name">Jar name</label>
+                <input id="create-goal-name" name="name" type="text" maxlength="60" required>
+                <label for="create-goal-target">Target amount (RON)</label>
+                <input id="create-goal-target" name="target" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required>
+                <p id="create-goal-error" class="goal-error" role="status" aria-live="polite"></p>
+                <div class="dialog-actions">
+                    <button id="cancel-create-goal" class="preset-button" type="button">Cancel</button>
+                    <button class="primary-button" type="submit">Create jar</button>
                 </div>
             </form>
         </dialog>
