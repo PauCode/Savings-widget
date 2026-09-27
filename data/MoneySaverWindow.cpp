@@ -27,7 +27,7 @@ std::wstring FormatMoney(double amount, const wchar_t* currencyCode) {
 }
 } // namespace
 
-int MoneySaverWindow::Run(HINSTANCE instance, int showCommand) {
+int NativeFallbackWindow::Run(HINSTANCE instance, int showCommand) {
     if (!savingsData_.Load()) {
         MessageBoxW(nullptr, L"Could not load current\\savings.dat.",
                     L"Money Saver", MB_OK | MB_ICONERROR);
@@ -77,14 +77,14 @@ int MoneySaverWindow::Run(HINSTANCE instance, int showCommand) {
     return static_cast<int>(message.wParam);
 }
 
-LRESULT CALLBACK MoneySaverWindow::WindowProc(
+LRESULT CALLBACK NativeFallbackWindow::WindowProc(
     HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
-    MoneySaverWindow* application = reinterpret_cast<MoneySaverWindow*>(
+    NativeFallbackWindow* application = reinterpret_cast<NativeFallbackWindow*>(
         GetWindowLongPtrW(window, GWLP_USERDATA));
 
     if (message == WM_NCCREATE) {
         const auto* createInfo = reinterpret_cast<CREATESTRUCTW*>(lParam);
-        application = static_cast<MoneySaverWindow*>(createInfo->lpCreateParams);
+        application = static_cast<NativeFallbackWindow*>(createInfo->lpCreateParams);
         application->window_ = window;
         SetWindowLongPtrW(
             window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(application));
@@ -96,7 +96,7 @@ LRESULT CALLBACK MoneySaverWindow::WindowProc(
     return application->HandleMessage(message, wParam, lParam);
 }
 
-LRESULT MoneySaverWindow::HandleMessage(
+LRESULT NativeFallbackWindow::HandleMessage(
     UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
     case WM_CREATE:
@@ -132,7 +132,7 @@ LRESULT MoneySaverWindow::HandleMessage(
     return DefWindowProcW(window_, message, wParam, lParam);
 }
 
-bool MoneySaverWindow::CreateControls() {
+bool NativeFallbackWindow::CreateControls() {
     font_ = static_cast<HFONT>(GetStockObject(DEFAULT_GUI_FONT));
 
     savedLabel_ = CreateWindowW(
@@ -175,7 +175,7 @@ bool MoneySaverWindow::CreateControls() {
     return true;
 }
 
-void MoneySaverWindow::StartRatesFetch() {
+void NativeFallbackWindow::StartRatesFetch() {
     ratesFetchState_ = std::make_shared<RatesFetchState>();
     const auto state = ratesFetchState_;
     const HWND window = window_;
@@ -200,7 +200,7 @@ void MoneySaverWindow::StartRatesFetch() {
     }
 }
 
-void MoneySaverWindow::HandleRatesLoaded() {
+void NativeFallbackWindow::HandleRatesLoaded() {
     if (!ratesFetchState_) {
         return;
     }
@@ -220,7 +220,7 @@ void MoneySaverWindow::HandleRatesLoaded() {
     UpdateDisplay();
 }
 
-void MoneySaverWindow::UpdateDisplay() {
+void NativeFallbackWindow::UpdateDisplay() {
     const int savedCents = savingsData_.GetSavedCents();
     progress_.Update(savedCents, kGoalCents);
 
@@ -255,7 +255,7 @@ void MoneySaverWindow::UpdateDisplay() {
                           : L"Every deposit gets you closer.");
 }
 
-void MoneySaverWindow::AddDeposit() {
+void NativeFallbackWindow::AddDeposit() {
     wchar_t buffer[64]{};
     GetWindowTextW(amountEdit_, buffer, static_cast<int>(std::size(buffer)));
 
@@ -273,7 +273,7 @@ void MoneySaverWindow::AddDeposit() {
     AddDeposit(amount, true);
 }
 
-void MoneySaverWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
+void NativeFallbackWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
     if (!ratesAvailable_) {
         SetWindowTextW(statusLabel_, ratesLoading_
                                          ? L"RON rates are still loading."

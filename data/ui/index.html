@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Savings Jar</title>
+    <link id="theme-stylesheet" rel="stylesheet" href="/Theme/default.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" aria-hidden="true"><span></span></div>
+                <div>
+                    <h1>Savings Jar</h1>
+                    <p>Small deposits. Real progress.</p>
+                </div>
+            </div>
+            <label class="theme-picker">
+                <span>Theme</span>
+                <select id="theme-select" aria-label="Choose a theme"></select>
+            </label>
+        </header>
+
+        <main>
+            <section class="savings-view" aria-labelledby="goal-title">
+                <div class="jar-panel">
+                    <div class="jar-scene" role="img" aria-label="Savings jar showing progress toward the goal">
+                        <div class="jar-lid"></div>
+                        <div class="jar-glass">
+                            <div class="jar-fill" id="jar-fill"></div>
+                            <div class="jar-shine"></div>
+                        </div>
+                    </div>
+                    <div class="progress-caption">
+                        <span id="progress-percent">0%</span>
+                        <span>of goal</span>
+                    </div>
+                    <div class="rate-stamp" id="rate-date">Rates loading</div>
+                </div>
+
+                <div class="account-panel">
+                    <p class="eyebrow">SAVINGS GOAL</p>
+                    <h2 id="goal-title">A little at a time</h2>
+
+                    <div class="balance-block">
+                        <span class="field-label">Current balance</span>
+                        <div class="balance-line">
+                            <strong id="balance-value">--.--</strong>
+                            <span class="currency-code">RON</span>
+                        </div>
+                        <div class="goal-line">
+                            <span>Target</span>
+                            <strong id="goal-value">--.-- RON</strong>
+                        </div>
+                    </div>
+
+                    <div class="progress-track" role="progressbar" aria-label="Savings goal progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div class="progress-value" id="progress-value"></div>
+                    </div>
+
+                    <section class="deposit-area" aria-labelledby="deposit-title">
+                        <div class="section-heading">
+                            <div>
+                                <p class="eyebrow">MAKE A DEPOSIT</p>
+                                <h3 id="deposit-title">Add to your jar</h3>
+                            </div>
+                            <span class="currency-tag">RON</span>
+                        </div>
+
+                        <div class="preset-grid" aria-label="Quick deposit amounts">
+                            <button class="preset-button" type="button" data-amount="50">+50 RON</button>
+                            <button class="preset-button" type="button" data-amount="100">+100 RON</button>
+                            <button class="preset-button" type="button" data-amount="250">+250 RON</button>
+                            <button class="preset-button" type="button" data-amount="500">+500 RON</button>
+                            <button class="preset-button preset-wide" type="button" data-amount="1000">+1,000 RON</button>
+                        </div>
+
+                        <form id="deposit-form" class="manual-deposit">
+                            <label class="visually-hidden" for="deposit-amount">Custom deposit amount in RON</label>
+                            <input id="deposit-amount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Custom amount" required>
+                            <button class="primary-button" type="submit">Add deposit</button>
+                        </form>
+                        <p class="status-message" id="status-message" role="status" aria-live="polite">Connecting to exchange rates...</p>
+                    </section>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

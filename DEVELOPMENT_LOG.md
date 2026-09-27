@@ -11,3 +11,7 @@
 - Updated the build task to create numbered `prototypes/iteration-N` folders containing the executable, compiler/linker artifacts, and `build.log`. The `prototypes/` folder is ignored by Git.
 - Validation: MSVC build succeeded through iteration 6; a live API smoke test converted 50 USD to 231.44 RON using rates dated 2026-09-26.
 - Note: the binary balance file is not encrypted. Exchange rates update daily, not in real time.
+- Added the WebView2 dashboard under `data/ui/` and a selectable default stylesheet under `Theme/`. CSS files with simple alphanumeric, dash, or underscore names are discovered at startup; the selected name is saved in `current/theme.txt`.
+- The app now launches WebView2 first and falls back to `NativeFallbackWindow` if the runtime, page navigation, or browser process fails. Savings continue to use `current/savings.dat`; WebView2 profile data is kept under `current/webview2-profile/`.
+- The build script restores WebView2 SDK `1.0.4191.47` to the ignored `.packages/` cache and still places each executable and build log in a numbered `prototypes/iteration-N/` folder.
+- Validation: iteration 13 built successfully; the WebView2 window launched responsively with the existing savings file present, and editor diagnostics were clear.

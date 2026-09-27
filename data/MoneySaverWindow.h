@@ -11,7 +11,7 @@
 #include "PresetDepositButtons.h"
 #include "SavingsProgress.h"
 
-class MoneySaverWindow {
+class NativeFallbackWindow {
 public:
     int Run(HINSTANCE instance, int showCommand);
 

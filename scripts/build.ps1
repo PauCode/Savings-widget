@@ -21,25 +21,32 @@ New-Item -ItemType Directory -Path $iterationPath | Out-Null
 Push-Location $workspaceRoot
 try {
     $relativeOutputPath = "prototypes\$iterationName"
+    $webViewNativePath = & (Join-Path $PSScriptRoot 'restore-webview2.ps1')
     $arguments = @(
         '/Zi',
         '/EHsc',
         '/nologo',
         '/std:c++17',
+        ('/I' + (Join-Path $webViewNativePath 'include')),
         ('/Fo' + $relativeOutputPath + '\'),
         ('/Fd' + $relativeOutputPath + '\MoneySavingWidgetCompiler.pdb'),
         ('/Fe' + $relativeOutputPath + '\MoneySavingWidget.exe'),
         'data\MoneySavingWidgetPrototype.cpp',
         'data\MoneySaverWindow.cpp',
+        'data\WebViewWindow.cpp',
         'data\DepositButton.cpp',
         'data\SavingsProgress.cpp',
         'data\PresetDepositButtons.cpp',
         'bin\SavingsData.cpp',
         'bin\CurrencyRates.cpp',
         '/link',
+        ('/LIBPATH:' + (Join-Path $webViewNativePath 'x64')),
         'User32.lib',
         'Gdi32.lib',
+        'Ole32.lib',
+        'version.lib',
         'Winhttp.lib',
+        'WebView2LoaderStatic.lib',
         'WindowsApp.lib'
     )
 
@@ -47,8 +54,11 @@ try {
     "Build iteration $nextIteration started at $(Get-Date -Format o)" |
         Set-Content -LiteralPath $logPath
 
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     $compilerOutput = & cl.exe @arguments 2>&1
     $buildExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
     $compilerOutput | Tee-Object -FilePath $logPath -Append
 
     if ($buildExitCode -eq 0) {

@@ -15,6 +15,7 @@ std::filesystem::path GetBinaryDataFilePath() {
     }
 
     return std::filesystem::path(exePath).parent_path()
+        .parent_path().parent_path()
         / L"current" / L"savings.dat";
 }
 
