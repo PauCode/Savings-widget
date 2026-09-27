@@ -151,7 +151,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         }
 
         constexpr DWORD style = WS_OVERLAPPEDWINDOW;
-        RECT bounds{0, 0, 1120, 760};
+        RECT bounds{0, 0, 1280, 840};
         AdjustWindowRectEx(&bounds, style, FALSE, 0);
         window_ = CreateWindowExW(
             0, kWindowClass, L"Savings Jar",

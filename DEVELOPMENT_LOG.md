@@ -53,6 +53,9 @@
 - Restyled the currency dropdown as a bordered pill (it previously had no border/background and looked identical to plain text, so it wasn't discoverable as a control).
 - Added a manual "refresh rates" icon button in the topbar (spinning refresh glyph, tooltip "Refreshes the currency exchange rate API"). It posts a `refreshRates` WebView message that re-runs the existing background rate fetch without blanking the currently displayed balance/goal; a new `ratesRefreshing` state flag disables/spins the button until the fetch completes.
 - Validation: iteration 55 built successfully and the WebView window launched responsively.
+- Enlarged the jar (`.jar-panel`/`.jar-scene` clamp ranges) and made the whole WebView UI scale with window size: added a fluid `clamp()` root font-size and converted most font-size/padding/gap/margin declarations across the layout to `rem` so they grow together, widened the `.app-shell` cap from 1120px to 1320px, and increased the default native window size to 1280x840 to match. `wave-view.js` already resizes the liquid canvas via `ResizeObserver`, so the jar's wave rendering adapts automatically to the new size without changes.
+- Validation: iteration 56 built successfully and the WebView window launched responsively at the larger default size.
+
 
 
 

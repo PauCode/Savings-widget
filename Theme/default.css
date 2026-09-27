@@ -21,6 +21,7 @@
     --coin-bottom: #ad6817;
 
     font-family: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    font-size: clamp(15px, 0.75vw + 10px, 20px);
     color: var(--text);
     background: var(--page);
     font-synthesis: none;
@@ -59,18 +60,18 @@ select:focus-visible {
 }
 
 .app-shell {
-    width: min(100%, 1120px);
+    width: min(100%, 1320px);
     min-height: 100vh;
     margin: 0 auto;
-    padding: 24px 28px 32px;
+    padding: 1.5rem 1.75rem 2rem;
 }
 
 .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    padding: 4px 0 20px;
+    gap: 1.25rem;
+    padding: 0.25rem 0 1.25rem;
     border-bottom: 1px solid var(--panel-edge);
 }
 
@@ -127,14 +128,14 @@ select:focus-visible {
 
 .brand h1 {
     margin: 0;
-    font-size: 23px;
+    font-size: 1.4375rem;
     font-weight: 680;
 }
 
 .brand p {
     margin: 3px 0 0;
     color: var(--muted);
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .theme-picker {
@@ -142,12 +143,12 @@ select:focus-visible {
     align-items: center;
     gap: 10px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .theme-picker select {
-    min-width: 132px;
-    padding: 9px 32px 9px 12px;
+    min-width: 8.25rem;
+    padding: 0.5625rem 2rem 0.5625rem 0.75rem;
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
     background: var(--panel);
@@ -157,9 +158,9 @@ select:focus-visible {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    margin-left: 12px;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-left: 0.75rem;
     padding: 0;
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
@@ -197,19 +198,19 @@ select:focus-visible {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 9px;
-    margin: 22px 0 0;
+    gap: 0.5625rem;
+    margin: 1.375rem 0 0;
 }
 
 .goal-pill {
-    min-height: 34px;
-    padding: 0 16px;
+    min-height: 2.125rem;
+    padding: 0 1rem;
     border: 1px solid var(--panel-edge);
     border-radius: 999px;
     background: var(--panel);
     color: var(--text);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 650;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
@@ -230,7 +231,7 @@ select:focus-visible {
 }
 
 .history-panel {
-    margin-top: 26px;
+    margin-top: 1.625rem;
     padding: clamp(20px, 3vw, 28px);
     border: 1px solid var(--panel-edge);
     border-radius: 16px;
@@ -243,7 +244,7 @@ select:focus-visible {
 
 .history-panel h3 {
     margin: 0;
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 620;
 }
 
@@ -260,11 +261,11 @@ select:focus-visible {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 11px 14px;
+    padding: 0.6875rem 0.875rem;
     border: 1px solid var(--panel-edge);
     border-radius: 9px;
     background: var(--field);
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .history-label {
@@ -273,7 +274,7 @@ select:focus-visible {
 
 .history-date {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 0.6875rem;
 }
 
 .history-amount {
@@ -292,30 +293,30 @@ select:focus-visible {
 .history-empty {
     margin: 6px 2px 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .savings-view {
     display: grid;
-    grid-template-columns: minmax(230px, 0.78fr) minmax(390px, 1.5fr);
-    gap: clamp(26px, 6vw, 74px);
+    grid-template-columns: minmax(250px, 0.85fr) minmax(390px, 1.5fr);
+    gap: clamp(26px, 6vw, 86px);
     align-items: center;
-    margin-top: 26px;
-    padding: 18px 0 0;
+    margin-top: 1.625rem;
+    padding: 1.125rem 0 0;
 }
 
 .jar-panel {
     display: grid;
     justify-items: center;
     align-content: center;
-    min-height: 350px;
+    min-height: 25rem;
 }
 
 .jar-scene {
     position: relative;
-    width: clamp(150px, 19vw, 208px);
-    height: clamp(230px, 27vw, 300px);
-    padding-top: 27px;
+    width: clamp(10rem, 21vw, 15.5rem);
+    height: clamp(15.25rem, 30vw, 22.5rem);
+    padding-top: 1.6875rem;
 }
 
 .jar-lid {
@@ -391,9 +392,9 @@ select:focus-visible {
 }
 
 .rate-stamp {
-    margin-top: 11px;
+    margin-top: 0.6875rem;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 0.6875rem;
 }
 
 .account-panel {
@@ -401,20 +402,20 @@ select:focus-visible {
 }
 
 .eyebrow {
-    margin: 0 0 7px;
+    margin: 0 0 0.4375rem;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 700;
 }
 
 .account-panel h2 {
-    margin: 0 0 24px;
-    font-size: 28px;
+    margin: 0 0 1.5rem;
+    font-size: 1.75rem;
     font-weight: 650;
 }
 
 .balance-block {
-    padding: 17px 20px 14px;
+    padding: 1.0625rem 1.25rem 0.875rem;
     border: 1px solid var(--panel-edge);
     border-radius: 11px;
     background: var(--field);
@@ -423,26 +424,26 @@ select:focus-visible {
 .field-label,
 .goal-line span {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .balance-line {
     display: flex;
     align-items: baseline;
-    gap: 11px;
+    gap: 0.6875rem;
     margin-top: 3px;
 }
 
 .balance-line strong {
     color: var(--accent);
-    font-size: 48px;
+    font-size: 3rem;
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
 }
 
 .currency-code {
     color: var(--accent);
-    font-size: 19px;
+    font-size: 1.1875rem;
     font-weight: 650;
 }
 
@@ -453,7 +454,7 @@ select:focus-visible {
     border-radius: 8px;
     background-color: var(--accent-soft);
     color: var(--accent);
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 700;
     font-family: inherit;
     line-height: 1.4;
@@ -483,26 +484,26 @@ select:focus-visible {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    margin-top: 9px;
-    padding-top: 10px;
+    gap: 1rem;
+    margin-top: 0.5625rem;
+    padding-top: 0.625rem;
     border-top: 1px solid var(--panel-edge);
 }
 
 .goal-line strong {
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 560;
 }
 
 .inline-action {
     flex: none;
-    padding: 4px 8px;
+    padding: 0.25rem 0.5rem;
     border: 1px solid var(--panel-edge);
     border-radius: 6px;
     background: transparent;
     color: var(--accent);
     cursor: pointer;
-    font-size: 11px;
+    font-size: 0.6875rem;
 }
 
 .inline-action:disabled {
@@ -532,17 +533,17 @@ select:focus-visible {
 
 .goal-dialog h2 {
     margin: 0 0 3px;
-    font-size: 22px;
+    font-size: 1.375rem;
 }
 
 .goal-dialog label {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .goal-dialog input {
     width: 100%;
-    min-height: 42px;
+    min-height: 2.625rem;
     padding: 0 12px;
     border: 1px solid var(--panel-edge);
     border-radius: 7px;
@@ -555,7 +556,7 @@ select:focus-visible {
     min-height: 17px;
     margin: 0;
     color: var(--danger);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .dialog-actions {
@@ -567,9 +568,9 @@ select:focus-visible {
 
 .progress-track {
     position: relative;
-    height: 18px;
+    height: 1.125rem;
     overflow: hidden;
-    margin: 17px 1px 24px;
+    margin: 1.0625rem 0.0625rem 1.5rem;
     border-radius: 99px;
     background: var(--field);
 }
@@ -591,7 +592,7 @@ select:focus-visible {
     display: grid;
     place-items: center;
     color: var(--text);
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 700;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     pointer-events: none;
@@ -602,35 +603,35 @@ select:focus-visible {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 13px;
+    margin-bottom: 0.8125rem;
 }
 
 .section-heading h3 {
     margin: 0;
-    font-size: 17px;
+    font-size: 1.0625rem;
     font-weight: 620;
 }
 
 .mode-toggle {
     display: inline-flex;
     gap: 3px;
-    margin-bottom: 12px;
-    padding: 4px;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem;
     border: 1px solid var(--panel-edge);
     border-radius: 9px;
     background: var(--field);
 }
 
 .mode-button {
-    min-width: 92px;
-    min-height: 32px;
-    padding: 0 13px;
+    min-width: 5.75rem;
+    min-height: 2rem;
+    padding: 0 0.8125rem;
     border: 0;
     border-radius: 6px;
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 650;
 }
 
@@ -640,11 +641,11 @@ select:focus-visible {
 }
 
 .currency-tag {
-    padding: 5px 9px;
+    padding: 0.3125rem 0.5625rem;
     border: 1px solid var(--panel-edge);
     border-radius: 6px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 650;
 }
 
@@ -656,7 +657,7 @@ select:focus-visible {
 
 .preset-button,
 .primary-button {
-    min-height: 43px;
+    min-height: 2.6875rem;
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
     cursor: pointer;
@@ -666,7 +667,7 @@ select:focus-visible {
 .preset-button {
     background: var(--panel);
     color: var(--text);
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 650;
     font-variant-numeric: tabular-nums;
 }
@@ -679,15 +680,15 @@ select:focus-visible {
 
 .manual-deposit {
     display: flex;
-    gap: 9px;
-    margin-top: 10px;
+    gap: 0.5625rem;
+    margin-top: 0.625rem;
 }
 
 .manual-deposit input {
     width: 100%;
     min-width: 0;
-    height: 44px;
-    padding: 0 13px;
+    height: 2.75rem;
+    padding: 0 0.8125rem;
     border: 1px solid var(--panel-edge);
     border-radius: 8px;
     background: var(--field);
@@ -700,11 +701,11 @@ select:focus-visible {
 
 .primary-button {
     flex: none;
-    padding: 0 17px;
+    padding: 0 1.0625rem;
     border-color: var(--accent-strong);
     background: var(--accent-strong);
     color: #041610;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 720;
 }
 
@@ -720,9 +721,9 @@ input:disabled {
 
 .status-message {
     min-height: 19px;
-    margin: 10px 0 0;
+    margin: 0.625rem 0 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .feedback-row {
@@ -734,14 +735,14 @@ input:disabled {
 
 .reset-button {
     flex: none;
-    min-height: 36px;
+    min-height: 2.25rem;
     margin-top: 3px;
-    padding: 0 8px;
+    padding: 0 0.5rem;
     border: 0;
     background: transparent;
     color: var(--danger);
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 620;
 }
 
