@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cl\\.exe /EHsc /nologo /std:c\\+\\+17 /Fo\\$env:TEMP\\\\ /Fe\\$env:TEMP\\\\CurrencyRatesSmokeTest\\.exe \\.\\\\prototypes\\\\CurrencyRatesSmokeTest\\.cpp \\.\\\\bin\\\\CurrencyRates\\.cpp /link Winhttp\\.lib WindowsApp\\.lib; if \\(\\$LASTEXITCODE -ne 0\\) \\{ exit \\$LASTEXITCODE \\}; & \"\\$env:TEMP\\\\CurrencyRatesSmokeTest\\.exe\"; exit \\$LASTEXITCODE$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

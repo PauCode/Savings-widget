@@ -17,9 +17,12 @@
                 "${workspaceFolder}\\data\\DepositButton.cpp",
                 "${workspaceFolder}\\data\\SavingsProgress.cpp",
                 "${workspaceFolder}\\bin\\SavingsData.cpp",
+                "${workspaceFolder}\\bin\\CurrencyRates.cpp",
                 "/link",
                 "User32.lib",
-                "Gdi32.lib"
+                "Gdi32.lib",
+                "Winhttp.lib",
+                "WindowsApp.lib"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
