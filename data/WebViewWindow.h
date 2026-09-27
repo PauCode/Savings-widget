@@ -3,6 +3,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -48,22 +49,28 @@ private:
     void HandleControllerCreated(HRESULT result, ICoreWebView2Controller* controller);
     void HandleWebMessage(ICoreWebView2WebMessageReceivedEventArgs* args);
     void HandleRatesLoaded();
-    void HandleDeposit(double amountRon);
-    void HandleWithdrawal(double amountRon);
+    void HandleDeposit(double amount);
+    void HandleWithdrawal(double amount);
     void HandleReset();
-    void HandleGoalTargetChange(double amountRon);
+    void HandleGoalTargetChange(double amount);
     void HandleGoalSelect(const std::wstring& id);
-    void HandleGoalCreate(const std::wstring& name, double targetRon);
+    void HandleGoalCreate(const std::wstring& name, double target);
     void HandleThemeSelection(const std::wstring& filename);
+    void HandleCurrencySelection(const std::wstring& code);
+    void HandleRefreshRates();
     void FinalizeDefaultGoalIfNeeded();
     void StartRatesFetch();
     void SendState(const std::wstring& status = {});
     void RequestFallback();
     void ResizeWebView();
     void MigrateLegacyBalanceIfNeeded();
+    std::optional<double> ConvertFromDisplayCurrency(double amount) const;
+    std::optional<double> ConvertToDisplayCurrency(double amountRon) const;
     std::vector<std::wstring> FindThemes() const;
     void LoadSelectedTheme();
     void SaveSelectedTheme() const;
+    void LoadSelectedCurrency();
+    void SaveSelectedCurrency() const;
 
     HINSTANCE instance_ = nullptr;
     HWND window_ = nullptr;
@@ -79,9 +86,11 @@ private:
     CurrencyRates currencyRates_;
     std::vector<std::wstring> themes_;
     std::wstring selectedTheme_ = L"default.css";
+    std::wstring selectedCurrency_ = L"USD";
     std::wstring status_;
     bool ratesLoading_ = true;
     bool ratesAvailable_ = false;
+    bool ratesRefreshing_ = false;
     bool pageReady_ = false;
     bool fallbackRequested_ = false;
 };

@@ -48,4 +48,11 @@
 - Validation: iteration 49 built successfully; the WebView window launched responsively and the migration correctly created `current/goals/default/` with the pre-existing balance/goal, generating a valid `current/goals/index.txt`.
 - Fixed a rounding bug where depositing e.g. 100 RON showed as 99.98 RON: balances were stored in USD cents and converted back to RON for display, and quantizing to USD cents on every deposit lost precision on the round trip. Balances are now stored directly in RON cents (like the goal target), removing the round trip entirely. Added a one-time per-goal migration (`balance-unit.txt` marker) that converts any pre-existing USD-cent balance to RON once rates are available, so older goal directories aren't corrupted by the unit change.
 - Validation: iteration 50 built successfully and the WebView window launched responsively.
+- Added a display-currency selector (WebView only) in place of the green "RON" tag beside the balance, offering all six `CurrencyRates`-supported codes (USD, RON, EUR, CAD, RUB, DKK). Selection persists to `current/currency.txt` and defaults to USD when no file is present. Balance, goal target, preset/custom deposit amounts, and history entries are now converted from RON to/from the selected currency in `WebViewWindow`; internal storage (RON cents) and `GoalManager`/`SavingsData`/`MoneySaverWindow` are untouched, so this is isolated to `data/WebViewWindow.h/.cpp` and the `data/ui/` + `Theme/default.css` frontend for easy revert.
+- Validation: iteration 52 built successfully and the WebView window launched responsively; `current/currency.txt` is only written once a currency is explicitly chosen, confirming the USD default.
+- Restyled the currency dropdown as a bordered pill (it previously had no border/background and looked identical to plain text, so it wasn't discoverable as a control).
+- Added a manual "refresh rates" icon button in the topbar (spinning refresh glyph, tooltip "Refreshes the currency exchange rate API"). It posts a `refreshRates` WebView message that re-runs the existing background rate fetch without blanking the currently displayed balance/goal; a new `ratesRefreshing` state flag disables/spins the button until the fetch completes.
+- Validation: iteration 55 built successfully and the WebView window launched responsively.
+
+
 

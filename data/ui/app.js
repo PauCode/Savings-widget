@@ -33,7 +33,13 @@ const createGoalError = document.querySelector("#create-goal-error");
 const cancelCreateGoalButton = document.querySelector("#cancel-create-goal");
 const historyList = document.querySelector("#history-list");
 const historyEmpty = document.querySelector("#history-empty");
+const currencySelect = document.querySelector("#currency-select");
+const currencyTag = document.querySelector("#currency-tag");
+const goalAmountLabel = document.querySelector("#goal-amount-label");
+const createGoalTargetLabel = document.querySelector("#create-goal-target-label");
+const refreshRatesButton = document.querySelector("#refresh-rates-button");
 let activeMode = "add";
+let currentCurrency = "RON";
 
 function postMessage(message) {
     if (window.chrome?.webview) {
@@ -41,7 +47,7 @@ function postMessage(message) {
     }
 }
 
-function formatRon(amount) {
+function formatAmount(amount) {
     return new Intl.NumberFormat("ro-RO", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
@@ -56,6 +62,14 @@ function setDepositEnabled(enabled) {
     });
 }
 
+function updatePresetLabels() {
+    const adding = activeMode === "add";
+    presetButtons.forEach((button) => {
+        const amount = new Intl.NumberFormat("en-US").format(Number(button.dataset.amount));
+        button.textContent = `${adding ? "+" : "-"}${amount} ${currentCurrency}`;
+    });
+}
+
 function setMode(mode) {
     activeMode = mode;
     const adding = activeMode === "add";
@@ -65,11 +79,18 @@ function setMode(mode) {
     removeModeButton.setAttribute("aria-pressed", String(!adding));
     depositTitle.textContent = adding ? "Add to your jar" : "Remove from your jar";
     applyButton.textContent = adding ? "Add deposit" : "Remove amount";
+    updatePresetLabels();
+}
 
-    presetButtons.forEach((button) => {
-        const amount = new Intl.NumberFormat("en-US").format(Number(button.dataset.amount));
-        button.textContent = `${adding ? "+" : "-"}${amount} RON`;
+function setCurrencyOptions(currencies, selectedCurrency) {
+    currencySelect.replaceChildren();
+    currencies.forEach((code) => {
+        const option = document.createElement("option");
+        option.value = code;
+        option.textContent = code;
+        currencySelect.append(option);
     });
+    currencySelect.value = selectedCurrency;
 }
 
 function setThemeOptions(themes, selectedTheme) {
@@ -121,7 +142,7 @@ function renderHistory(history) {
         const sign = entry.type === "withdraw" ? "-" : entry.type === "deposit" ? "+" : "";
         const amountText = entry.type === "reset"
             ? "Balance set to 0"
-            : `${sign}${formatRon(Math.abs(entry.amountRon))} RON`;
+            : `${sign}${formatAmount(Math.abs(entry.amountRon))} ${currentCurrency}`;
 
         const labelSpan = document.createElement("span");
         labelSpan.className = "history-label";
@@ -155,9 +176,24 @@ function renderState(state) {
     if (state.activeGoalName) {
         goalTitle.textContent = state.activeGoalName;
     }
+
+    if (state.currencies?.length) {
+        setCurrencyOptions(state.currencies, state.currency);
+    }
+    if (state.currency) {
+        currentCurrency = state.currency;
+        currencyTag.textContent = currentCurrency;
+        goalAmountLabel.textContent = `New goal amount (${currentCurrency})`;
+        createGoalTargetLabel.textContent = `Target amount (${currentCurrency})`;
+        updatePresetLabels();
+    }
+
     if (state.history) {
         renderHistory(state.history);
     }
+
+    refreshRatesButton.disabled = Boolean(state.ratesRefreshing);
+    refreshRatesButton.classList.toggle("is-spinning", Boolean(state.ratesRefreshing));
 
     setDepositEnabled(state.ratesAvailable);
     editGoalButton.disabled = false;
@@ -172,15 +208,15 @@ function renderState(state) {
 
     if (!state.ratesAvailable) {
         balanceValue.textContent = "--.--";
-        goalValue.textContent = "--.-- RON";
+        goalValue.textContent = "--.--";
         statusMessage.textContent = state.ratesLoading
             ? "Connecting to exchange rates..."
-            : "RON rates are unavailable. Deposits are disabled.";
+            : "Exchange rates are unavailable. Deposits are disabled.";
         return;
     }
 
-    balanceValue.textContent = formatRon(state.balanceRon);
-    goalValue.textContent = `${formatRon(state.goalRon)} RON`;
+    balanceValue.textContent = formatAmount(state.balanceRon);
+    goalValue.textContent = `${formatAmount(state.goalRon)} ${currentCurrency}`;
     if (!goalDialog.open) {
         goalAmount.value = Number(state.goalRon).toFixed(2);
     }
@@ -199,6 +235,14 @@ themeSelect.addEventListener("change", () => {
     postMessage({ type: "theme", file: themeSelect.value });
 });
 
+currencySelect.addEventListener("change", () => {
+    postMessage({ type: "currency", code: currencySelect.value });
+});
+
+refreshRatesButton.addEventListener("click", () => {
+    postMessage({ type: "refreshRates" });
+});
+
 addModeButton.addEventListener("click", () => setMode("add"));
 removeModeButton.addEventListener("click", () => setMode("remove"));
 
@@ -206,7 +250,7 @@ presetButtons.forEach((button) => {
     button.addEventListener("click", () => {
         postMessage({
             type: activeMode === "add" ? "deposit" : "withdraw",
-            amountRon: Number(button.dataset.amount)
+            amount: Number(button.dataset.amount)
         });
     });
 });
@@ -215,7 +259,7 @@ depositForm.addEventListener("submit", (event) => {
     event.preventDefault();
     postMessage({
         type: activeMode === "add" ? "deposit" : "withdraw",
-        amountRon: Number(depositAmount.value)
+        amount: Number(depositAmount.value)
     });
 });
 
@@ -235,12 +279,12 @@ cancelGoalButton.addEventListener("click", () => {
 
 goalForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    const amountRon = Number(goalAmount.value);
-    if (!Number.isFinite(amountRon) || amountRon <= 0 || amountRon > 1000000) {
-        goalError.textContent = "Enter a goal between 0.01 and 1,000,000 RON.";
+    const amount = Number(goalAmount.value);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
+        goalError.textContent = `Enter a goal between 0.01 and 1,000,000 ${currentCurrency}.`;
         return;
     }
-    postMessage({ type: "goal", amountRon });
+    postMessage({ type: "goal", amount });
     goalDialog.close();
 });
 
@@ -258,16 +302,16 @@ cancelCreateGoalButton.addEventListener("click", () => {
 createGoalForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const name = createGoalName.value.trim();
-    const targetRon = Number(createGoalTarget.value);
+    const target = Number(createGoalTarget.value);
     if (!name) {
         createGoalError.textContent = "Enter a name for the jar.";
         return;
     }
-    if (!Number.isFinite(targetRon) || targetRon <= 0 || targetRon > 1000000) {
-        createGoalError.textContent = "Enter a target between 0.01 and 1,000,000 RON.";
+    if (!Number.isFinite(target) || target <= 0 || target > 1000000) {
+        createGoalError.textContent = `Enter a target between 0.01 and 1,000,000 ${currentCurrency}.`;
         return;
     }
-    postMessage({ type: "createGoal", name, targetRon });
+    postMessage({ type: "createGoal", name, target });
     createGoalDialog.close();
 });
 

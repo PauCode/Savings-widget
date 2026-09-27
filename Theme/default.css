@@ -153,6 +153,46 @@ select:focus-visible {
     background: var(--panel);
 }
 
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-left: 12px;
+    padding: 0;
+    border: 1px solid var(--panel-edge);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.icon-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--panel-raised);
+}
+
+.icon-button:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.icon-button.is-spinning svg {
+    animation: icon-spin 0.9s linear infinite;
+}
+
+@keyframes icon-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .goal-selector {
     display: flex;
     flex-wrap: wrap;
@@ -404,6 +444,39 @@ select:focus-visible {
     color: var(--accent);
     font-size: 19px;
     font-weight: 650;
+}
+
+.currency-code-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--accent-strong);
+    border-radius: 8px;
+    background-color: var(--accent-soft);
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    line-height: 1.4;
+    padding: 4px 24px 4px 10px;
+    margin: 0;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+        linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+    background-position: right 11px top 55%, right 6px top 55%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.currency-code-select:hover {
+    border-color: var(--accent);
+    background-color: var(--panel-raised);
+}
+
+.currency-code-select option {
+    color: var(--text);
+    background: var(--panel);
+    font-weight: 500;
 }
 
 .goal-line {

@@ -95,6 +95,20 @@ bool IsValidThemeFilename(const std::wstring& filename) {
                                   character == L'-' || character == L'_';
                        });
 }
+
+std::wstring WidenAscii(std::string_view text) {
+    return std::wstring(text.begin(), text.end());
+}
+
+std::string NarrowAscii(const std::wstring& text) {
+    std::string narrow;
+    narrow.reserve(text.size());
+    for (wchar_t character : text) {
+        narrow.push_back(static_cast<char>(
+            std::toupper(static_cast<unsigned char>(character & 0xff))));
+    }
+    return narrow;
+}
 } // namespace
 
 WebViewWindow::~WebViewWindow() {
@@ -122,6 +136,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
             return false;
         }
         LoadSelectedTheme();
+        LoadSelectedCurrency();
 
         WNDCLASSEXW windowClass{};
         windowClass.cbSize = sizeof(windowClass);
@@ -377,22 +392,27 @@ void WebViewWindow::HandleWebMessage(
             pageReady_ = true;
             SendState();
         } else if (type == L"deposit") {
-            HandleDeposit(message.GetNamedNumber(L"amountRon"));
+            HandleDeposit(message.GetNamedNumber(L"amount"));
         } else if (type == L"withdraw") {
-            HandleWithdrawal(message.GetNamedNumber(L"amountRon"));
+            HandleWithdrawal(message.GetNamedNumber(L"amount"));
         } else if (type == L"reset") {
             HandleReset();
         } else if (type == L"goal") {
-            HandleGoalTargetChange(message.GetNamedNumber(L"amountRon"));
+            HandleGoalTargetChange(message.GetNamedNumber(L"amount"));
         } else if (type == L"selectGoal") {
             HandleGoalSelect(std::wstring(message.GetNamedString(L"id")));
         } else if (type == L"createGoal") {
             HandleGoalCreate(
                 std::wstring(message.GetNamedString(L"name")),
-                message.GetNamedNumber(L"targetRon"));
+                message.GetNamedNumber(L"target"));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
+        } else if (type == L"currency") {
+            HandleCurrencySelection(
+                std::wstring(message.GetNamedString(L"code")));
+        } else if (type == L"refreshRates") {
+            HandleRefreshRates();
         }
     } catch (const winrt::hresult_error&) {
     }
@@ -418,6 +438,7 @@ void WebViewWindow::StartRatesFetch() {
         }).detach();
     } catch (const std::system_error&) {
         ratesLoading_ = false;
+        ratesRefreshing_ = false;
         SendState(L"Could not start the exchange-rate request.");
     }
 }
@@ -438,6 +459,7 @@ void WebViewWindow::HandleRatesLoaded() {
         }
     }
     ratesLoading_ = false;
+    ratesRefreshing_ = false;
     MigrateLegacyBalanceIfNeeded();
     FinalizeDefaultGoalIfNeeded();
     SendState();
@@ -467,17 +489,23 @@ void WebViewWindow::FinalizeDefaultGoalIfNeeded() {
         static_cast<int>(std::lround(*defaultGoalRon * 100.0)));
 }
 
-void WebViewWindow::HandleDeposit(double amountRon) {
+void WebViewWindow::HandleDeposit(double amount) {
     if (!ratesAvailable_) {
-        SendState(ratesLoading_ ? L"RON rates are still loading."
-                                : L"RON rates are unavailable.");
+        SendState(ratesLoading_ ? L"Exchange rates are still loading."
+                                : L"Exchange rates are unavailable.");
         return;
     }
 
-    const DepositResult result = goalManager_.AddDeposit(amountRon);
+    const auto amountRon = ConvertFromDisplayCurrency(amount);
+    if (!amountRon) {
+        SendState(L"Enter a valid amount greater than 0.");
+        return;
+    }
+
+    const DepositResult result = goalManager_.AddDeposit(*amountRon);
     switch (result) {
     case DepositResult::InvalidAmount:
-        SendState(L"Enter a valid amount greater than 0 RON.");
+        SendState(L"Enter a valid amount greater than 0.");
         return;
     case DepositResult::TooLarge:
         SendState(L"That deposit is too large.");
@@ -494,14 +522,20 @@ void WebViewWindow::HandleDeposit(double amountRon) {
     }
 }
 
-void WebViewWindow::HandleWithdrawal(double amountRon) {
+void WebViewWindow::HandleWithdrawal(double amount) {
     if (!ratesAvailable_) {
-        SendState(ratesLoading_ ? L"RON rates are still loading."
-                                : L"RON rates are unavailable.");
+        SendState(ratesLoading_ ? L"Exchange rates are still loading."
+                                : L"Exchange rates are unavailable.");
         return;
     }
 
-    const DepositResult result = goalManager_.RemoveFunds(amountRon);
+    const auto amountRon = ConvertFromDisplayCurrency(amount);
+    if (!amountRon) {
+        SendState(L"Enter a valid amount greater than 0.");
+        return;
+    }
+
+    const DepositResult result = goalManager_.RemoveFunds(*amountRon);
     switch (result) {
     case DepositResult::Removed:
         SendState(L"Amount removed.");
@@ -510,7 +544,7 @@ void WebViewWindow::HandleWithdrawal(double amountRon) {
         SendState(L"Not enough savings to remove that amount.");
         return;
     case DepositResult::InvalidAmount:
-        SendState(L"Enter a valid amount greater than 0 RON.");
+        SendState(L"Enter a valid amount greater than 0.");
         return;
     case DepositResult::TooLarge:
         SendState(L"That amount is too large.");
@@ -539,11 +573,22 @@ void WebViewWindow::HandleReset() {
     SendState(L"Savings reset.");
 }
 
-void WebViewWindow::HandleGoalTargetChange(double amountRon) {
-    const long targetRonCents = std::lround(amountRon * 100.0);
+void WebViewWindow::HandleGoalTargetChange(double amount) {
+    if (!ratesAvailable_) {
+        SendState(L"Exchange rates are unavailable; the goal was not changed.");
+        return;
+    }
+
+    const auto amountRon = ConvertFromDisplayCurrency(amount);
+    if (!amountRon) {
+        SendState(L"Enter a valid goal greater than 0.");
+        return;
+    }
+
+    const long targetRonCents = std::lround(*amountRon * 100.0);
     if (targetRonCents <= 0 ||
         targetRonCents > SavingsData::kMaximumSavedCents) {
-        SendState(L"Enter a valid goal greater than 0 RON.");
+        SendState(L"That goal is too large.");
         return;
     }
 
@@ -564,11 +609,22 @@ void WebViewWindow::HandleGoalSelect(const std::wstring& id) {
     SendState();
 }
 
-void WebViewWindow::HandleGoalCreate(const std::wstring& name, double targetRon) {
-    const long targetRonCents = std::lround(targetRon * 100.0);
+void WebViewWindow::HandleGoalCreate(const std::wstring& name, double target) {
+    if (!ratesAvailable_) {
+        SendState(L"Exchange rates are unavailable; try again shortly.");
+        return;
+    }
+
+    const auto targetRon = ConvertFromDisplayCurrency(target);
+    if (!targetRon) {
+        SendState(L"Enter a valid target greater than 0.");
+        return;
+    }
+
+    const long targetRonCents = std::lround(*targetRon * 100.0);
     if (targetRonCents <= 0 ||
         targetRonCents > SavingsData::kMaximumSavedCents) {
-        SendState(L"Enter a valid target greater than 0 RON.");
+        SendState(L"Enter a valid target greater than 0.");
         return;
     }
     if (name.empty()) {
@@ -594,6 +650,45 @@ void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
     SendState();
 }
 
+void WebViewWindow::HandleCurrencySelection(const std::wstring& code) {
+    const auto& supported = CurrencyRates::SupportedCurrencies();
+    const std::string narrowCode = NarrowAscii(code);
+    if (std::find(supported.begin(), supported.end(), narrowCode) == supported.end()) {
+        return;
+    }
+    selectedCurrency_ = WidenAscii(narrowCode);
+    SaveSelectedCurrency();
+    SendState();
+}
+
+void WebViewWindow::HandleRefreshRates() {
+    if (ratesRefreshing_) {
+        return;
+    }
+    ratesRefreshing_ = true;
+    SendState(L"Refreshing exchange rates...");
+    StartRatesFetch();
+}
+
+std::optional<double> WebViewWindow::ConvertFromDisplayCurrency(double amount) const {
+    if (!std::isfinite(amount) || amount <= 0.0) {
+        return std::nullopt;
+    }
+    const std::string code = NarrowAscii(selectedCurrency_);
+    if (code == "RON") {
+        return amount;
+    }
+    return currencyRates_.Convert(amount, code, "RON");
+}
+
+std::optional<double> WebViewWindow::ConvertToDisplayCurrency(double amountRon) const {
+    const std::string code = NarrowAscii(selectedCurrency_);
+    if (code == "RON") {
+        return amountRon;
+    }
+    return currencyRates_.Convert(amountRon, "RON", code);
+}
+
 void WebViewWindow::SendState(const std::wstring& status) {
     if (!webView_ || !pageReady_) {
         return;
@@ -605,6 +700,12 @@ void WebViewWindow::SendState(const std::wstring& status) {
     const auto balanceRon = ratesAvailable_
         ? std::optional<double>{savedCents / 100.0}
         : std::optional<double>{};
+    const auto balanceDisplay = balanceRon
+        ? ConvertToDisplayCurrency(*balanceRon)
+        : std::optional<double>{};
+    const auto goalDisplay = (ratesAvailable_ && goalRon > 0.0)
+        ? ConvertToDisplayCurrency(goalRon)
+        : std::optional<double>{};
 
     if (!status.empty()) {
         status_ = status;
@@ -615,7 +716,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
     } else if (ratesLoading_) {
         status_ = L"Connecting to exchange rates...";
     } else {
-        status_ = L"RON rates are unavailable. Deposits are disabled.";
+        status_ = L"Exchange rates are unavailable. Deposits are disabled.";
     }
 
     const double rawProgressRatio = (balanceRon && goalRon > 0.0)
@@ -630,8 +731,9 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << L"{\"type\":\"state\",\"ratesAvailable\":"
          << (ratesAvailable_ ? L"true" : L"false")
          << L",\"ratesLoading\":" << (ratesLoading_ ? L"true" : L"false")
-         << L",\"balanceRon\":" << balanceRon.value_or(0.0)
-         << L",\"goalRon\":" << goalRon
+         << L",\"ratesRefreshing\":" << (ratesRefreshing_ ? L"true" : L"false")
+         << L",\"balanceRon\":" << balanceDisplay.value_or(0.0)
+         << L",\"goalRon\":" << goalDisplay.value_or(0.0)
          << L",\"progressPercent\":" << progressPercent
          << L",\"progressRatio\":" << progressRatio
          << L",\"rateDate\":\""
@@ -641,9 +743,19 @@ void WebViewWindow::SendState(const std::wstring& status) {
                            : std::wstring{})
          << L"\",\"status\":\"" << EscapeJson(status_)
          << L"\",\"selectedTheme\":\"" << EscapeJson(selectedTheme_)
+         << L"\",\"currency\":\"" << EscapeJson(selectedCurrency_)
          << L"\",\"activeGoalId\":\"" << EscapeJson(goalManager_.GetActiveGoalId())
          << L"\",\"activeGoalName\":\"" << EscapeJson(goalManager_.GetActiveGoalName())
-         << L"\",\"goals\":[";
+         << L"\",\"currencies\":[";
+
+    const auto& supportedCurrencies = CurrencyRates::SupportedCurrencies();
+    for (std::size_t index = 0; index < supportedCurrencies.size(); ++index) {
+        if (index > 0) {
+            json << L',';
+        }
+        json << L'"' << WidenAscii(supportedCurrencies[index]) << L'"';
+    }
+    json << L"],\"goals\":[";
 
     const auto& goals = goalManager_.GetGoals();
     for (std::size_t index = 0; index < goals.size(); ++index) {
@@ -660,9 +772,13 @@ void WebViewWindow::SendState(const std::wstring& status) {
         if (index > 0) {
             json << L',';
         }
+        const double amountRon = history[index].amountRonCents / 100.0;
+        const double amountDisplay = (history[index].type == L"reset")
+            ? 0.0
+            : ConvertToDisplayCurrency(amountRon).value_or(amountRon);
         json << L"{\"timestamp\":" << history[index].timestampMillis
              << L",\"type\":\"" << EscapeJson(history[index].type)
-             << L"\",\"amountRon\":" << (history[index].amountRonCents / 100.0)
+             << L"\",\"amountRon\":" << amountDisplay
              << L"}";
     }
     json << L"],\"themes\":[";
@@ -760,5 +876,47 @@ void WebViewWindow::SaveSelectedTheme() const {
             filename.push_back(static_cast<char>(character));
         }
         file << filename << '\n';
+    }
+}
+
+void WebViewWindow::LoadSelectedCurrency() {
+    selectedCurrency_ = L"USD";
+    const auto workspaceRoot = GetWorkspaceRoot();
+    if (workspaceRoot.empty()) {
+        return;
+    }
+
+    std::ifstream file(workspaceRoot / L"current" / L"currency.txt");
+    std::string selected;
+    if (!file || !std::getline(file, selected)) {
+        return;
+    }
+
+    for (char& character : selected) {
+        character = static_cast<char>(std::toupper(static_cast<unsigned char>(character)));
+    }
+
+    const auto& supported = CurrencyRates::SupportedCurrencies();
+    if (std::find(supported.begin(), supported.end(), selected) != supported.end()) {
+        selectedCurrency_ = WidenAscii(selected);
+    }
+}
+
+void WebViewWindow::SaveSelectedCurrency() const {
+    const auto workspaceRoot = GetWorkspaceRoot();
+    if (workspaceRoot.empty()) {
+        return;
+    }
+
+    std::error_code error;
+    const auto currentDirectory = workspaceRoot / L"current";
+    std::filesystem::create_directories(currentDirectory, error);
+    if (error) {
+        return;
+    }
+
+    std::ofstream file(currentDirectory / L"currency.txt", std::ios::trunc);
+    if (file) {
+        file << NarrowAscii(selectedCurrency_) << '\n';
     }
 }
