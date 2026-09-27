@@ -14,6 +14,11 @@
     --danger: #ef7180;
     --field: #0b1620;
     --shadow: rgba(0, 0, 0, 0.24);
+    --liquid-top: #38e0b1;
+    --liquid-bottom: #0d8f80;
+    --liquid-highlight: #c9fff0;
+    --coin-top: #fff1a1;
+    --coin-bottom: #ad6817;
 
     font-family: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
     color: var(--text);
@@ -194,6 +199,33 @@ select:focus-visible {
     box-shadow: inset 9px 0 18px rgba(255, 255, 255, 0.08), 0 18px 30px var(--shadow);
 }
 
+.jar-wave {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.jar-glass-reflections {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+        90deg,
+        rgba(226, 250, 246, 0.20) 0,
+        rgba(226, 250, 246, 0.07) 8px,
+        transparent 17px,
+        transparent calc(100% - 17px),
+        rgba(226, 250, 246, 0.06) calc(100% - 8px),
+        rgba(226, 250, 246, 0.16) 100%);
+    box-shadow: inset 5px 0 9px rgba(225, 255, 250, 0.08),
+                inset -4px 0 8px rgba(225, 255, 250, 0.06);
+    pointer-events: none;
+}
+
 .jar-glass::before {
     position: absolute;
     top: -4px;
@@ -205,30 +237,9 @@ select:focus-visible {
     content: "";
 }
 
-.jar-fill {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    min-height: 0;
-    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 77%, #258bc0 100%);
-    opacity: 0.88;
-    transition: height 420ms ease;
-}
-
-.jar-fill::before {
-    position: absolute;
-    top: -9px;
-    left: -5%;
-    width: 110%;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    content: "";
-}
-
 .jar-shine {
     position: absolute;
+    z-index: 3;
     top: 15px;
     bottom: 14px;
     left: 12px;

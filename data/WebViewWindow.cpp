@@ -550,8 +550,10 @@ void WebViewWindow::SendState(const std::wstring& status) {
     const auto goalRon = ratesAvailable_
         ? currencyRates_.Convert(kGoalCents / 100.0, "USD", "RON")
         : std::optional<double>{};
-    const double progressPercent = std::clamp(
-        static_cast<double>(savedCents) * 100.0 / kGoalCents, 0.0, 100.0);
+    const double rawProgressRatio =
+        static_cast<double>(savedCents) * 100.0 / kGoalCents;
+    const double progressRatio = rawProgressRatio > 0.0 ? rawProgressRatio : 0.0;
+    const double progressPercent = std::clamp(progressRatio, 0.0, 100.0);
 
     std::wostringstream json;
     json.imbue(std::locale::classic());
@@ -562,6 +564,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << L",\"balanceRon\":" << balanceRon.value_or(0.0)
          << L",\"goalRon\":" << goalRon.value_or(0.0)
          << L",\"progressPercent\":" << progressPercent
+         << L",\"progressRatio\":" << progressRatio
          << L",\"rateDate\":\""
          << EscapeJson(ratesAvailable_
                            ? std::wstring(currencyRates_.GetRateDate().begin(),

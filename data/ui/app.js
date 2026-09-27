@@ -14,7 +14,7 @@ const goalValue = document.querySelector("#goal-value");
 const progressValue = document.querySelector("#progress-value");
 const progressLabel = document.querySelector("#progress-label");
 const progressTrack = document.querySelector(".progress-track");
-const jarFill = document.querySelector("#jar-fill");
+const waveView = new WaveView(document.querySelector("#jar-wave"));
 const rateDate = document.querySelector("#rate-date");
 let activeMode = "add";
 
@@ -79,6 +79,11 @@ function renderState(state) {
     rateDate.textContent = state.ratesAvailable
         ? `Rates · ${state.rateDate}`
         : state.ratesLoading ? "Rates loading" : "Rates unavailable";
+    const percent = Math.min(100, Math.max(0, state.progressPercent));
+    progressValue.style.width = `${percent}%`;
+    progressLabel.textContent = `${Math.round(percent)}%`;
+    const progressRatio = state.progressRatio ?? percent;
+    waveView.setProgress(progressRatio);
 
     if (!state.ratesAvailable) {
         balanceValue.textContent = "--.--";
@@ -92,10 +97,6 @@ function renderState(state) {
     balanceValue.textContent = formatRon(state.balanceRon);
     goalValue.textContent = `${formatRon(state.goalRon)} RON`;
 
-    const percent = Math.min(100, Math.max(0, state.progressPercent));
-    progressValue.style.width = `${percent}%`;
-    jarFill.style.height = `${percent}%`;
-    progressLabel.textContent = `${Math.round(percent)}%`;
     progressTrack.setAttribute("aria-valuenow", String(Math.round(percent)));
     statusMessage.textContent = state.status || "Every deposit gets you closer.";
 }
