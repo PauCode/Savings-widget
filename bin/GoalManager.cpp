@@ -194,6 +194,12 @@ bool GoalManager::CreateGoal(
         return false;
     }
 
+    std::ofstream unitMarker(directory / L"balance-unit.txt", std::ios::trunc);
+    if (!unitMarker) {
+        return false;
+    }
+    unitMarker << "ron";
+
     goals_.push_back({newId, name});
     activeId_ = newId;
     if (!SaveIndex() || !LoadActiveGoalData(newId)) {
@@ -223,16 +229,16 @@ int GoalManager::GetActiveSavedCents() const noexcept {
     return activeSavings_.GetSavedCents();
 }
 
-DepositResult GoalManager::AddDeposit(double amountUsd, double amountRon) {
-    const DepositResult result = activeSavings_.AddDeposit(amountUsd);
+DepositResult GoalManager::AddDeposit(double amountRon) {
+    const DepositResult result = activeSavings_.AddDeposit(amountRon);
     if (result == DepositResult::Added) {
         RecordHistory(L"deposit", static_cast<int>(std::lround(amountRon * 100.0)));
     }
     return result;
 }
 
-DepositResult GoalManager::RemoveFunds(double amountUsd, double amountRon) {
-    const DepositResult result = activeSavings_.RemoveFunds(amountUsd);
+DepositResult GoalManager::RemoveFunds(double amountRon) {
+    const DepositResult result = activeSavings_.RemoveFunds(amountRon);
     if (result == DepositResult::Removed) {
         RecordHistory(L"withdraw", static_cast<int>(std::lround(amountRon * 100.0)));
     }
@@ -245,6 +251,42 @@ bool GoalManager::ResetActiveGoal() {
     }
     RecordHistory(L"reset", 0);
     return true;
+}
+
+bool GoalManager::ActiveGoalNeedsLegacyUnitMigration() const {
+    const auto directory = GetGoalDirectory(activeId_);
+    if (directory.empty()) {
+        return false;
+    }
+
+    std::error_code error;
+    const bool hasBalanceFile = fs::exists(directory / L"savings.dat", error) && !error;
+    if (!hasBalanceFile || activeSavings_.GetSavedCents() <= 0) {
+        return false;
+    }
+    return !fs::exists(directory / L"balance-unit.txt", error);
+}
+
+bool GoalManager::MigrateActiveGoalBalanceToRon(double convertedRonAmount) {
+    const auto directory = GetGoalDirectory(activeId_);
+    if (directory.empty()) {
+        return false;
+    }
+
+    if (!activeSavings_.Reset()) {
+        return false;
+    }
+    if (convertedRonAmount > 0.0 &&
+        activeSavings_.AddDeposit(convertedRonAmount) != DepositResult::Added) {
+        return false;
+    }
+
+    std::ofstream marker(directory / L"balance-unit.txt", std::ios::trunc);
+    if (!marker) {
+        return false;
+    }
+    marker << "ron";
+    return marker.good();
 }
 
 std::vector<GoalHistoryEntry> GoalManager::GetActiveHistory(

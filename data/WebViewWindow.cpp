@@ -438,8 +438,19 @@ void WebViewWindow::HandleRatesLoaded() {
         }
     }
     ratesLoading_ = false;
+    MigrateLegacyBalanceIfNeeded();
     FinalizeDefaultGoalIfNeeded();
     SendState();
+}
+
+void WebViewWindow::MigrateLegacyBalanceIfNeeded() {
+    if (!ratesAvailable_ || !goalManager_.ActiveGoalNeedsLegacyUnitMigration()) {
+        return;
+    }
+
+    const auto convertedRon = currencyRates_.Convert(
+        goalManager_.GetActiveSavedCents() / 100.0, "USD", "RON");
+    goalManager_.MigrateActiveGoalBalanceToRon(convertedRon.value_or(0.0));
 }
 
 void WebViewWindow::FinalizeDefaultGoalIfNeeded() {
@@ -463,13 +474,7 @@ void WebViewWindow::HandleDeposit(double amountRon) {
         return;
     }
 
-    const auto amountUsd = currencyRates_.Convert(amountRon, "RON", "USD");
-    if (!amountUsd || *amountUsd <= 0.0) {
-        SendState(L"Enter a valid amount greater than 0 RON.");
-        return;
-    }
-
-    const DepositResult result = goalManager_.AddDeposit(*amountUsd, amountRon);
+    const DepositResult result = goalManager_.AddDeposit(amountRon);
     switch (result) {
     case DepositResult::InvalidAmount:
         SendState(L"Enter a valid amount greater than 0 RON.");
@@ -496,13 +501,7 @@ void WebViewWindow::HandleWithdrawal(double amountRon) {
         return;
     }
 
-    const auto amountUsd = currencyRates_.Convert(amountRon, "RON", "USD");
-    if (!amountUsd || *amountUsd <= 0.0) {
-        SendState(L"Enter a valid amount greater than 0 RON.");
-        return;
-    }
-
-    const DepositResult result = goalManager_.RemoveFunds(*amountUsd, amountRon);
+    const DepositResult result = goalManager_.RemoveFunds(amountRon);
     switch (result) {
     case DepositResult::Removed:
         SendState(L"Amount removed.");
@@ -561,6 +560,7 @@ void WebViewWindow::HandleGoalSelect(const std::wstring& id) {
         SendState(L"Could not switch goals.");
         return;
     }
+    MigrateLegacyBalanceIfNeeded();
     SendState();
 }
 
@@ -603,7 +603,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
     const int targetRonCents = goalManager_.GetActiveGoalTargetRonCents();
     const double goalRon = targetRonCents > 0 ? targetRonCents / 100.0 : 0.0;
     const auto balanceRon = ratesAvailable_
-        ? currencyRates_.Convert(savedCents / 100.0, "USD", "RON")
+        ? std::optional<double>{savedCents / 100.0}
         : std::optional<double>{};
 
     if (!status.empty()) {

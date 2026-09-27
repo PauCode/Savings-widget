@@ -20,7 +20,7 @@ struct GoalHistoryEntry {
 // Owns the list of savings goals ("jars"), the currently active goal, and
 // the balance/target/history for that active goal. Every goal is backed by
 // its own directory under current/goals/<id>/ containing:
-//   savings.dat  - 4-byte balance in USD cents (SavingsData format)
+//   savings.dat  - 4-byte balance in RON cents (SavingsData format)
 //   goal.dat     - 4-byte target in RON cents
 //   history.log  - append-only "<millis>|<type>|<ronCents>" text lines
 // current/goals/index.txt tracks the active goal id and the goal list.
@@ -42,9 +42,16 @@ public:
     bool SetActiveGoalTargetRonCents(int targetRonCents);
 
     int GetActiveSavedCents() const noexcept;
-    DepositResult AddDeposit(double amountUsd, double amountRon);
-    DepositResult RemoveFunds(double amountUsd, double amountRon);
+    DepositResult AddDeposit(double amountRon);
+    DepositResult RemoveFunds(double amountRon);
     bool ResetActiveGoal();
+
+    // Older goal directories stored the balance in USD cents (converted to
+    // RON only for display). These two let the caller detect that case and
+    // rewrite the balance in RON cents using a caller-supplied conversion,
+    // exactly once per goal directory.
+    bool ActiveGoalNeedsLegacyUnitMigration() const;
+    bool MigrateActiveGoalBalanceToRon(double convertedRonAmount);
 
     std::vector<GoalHistoryEntry> GetActiveHistory(std::size_t maxEntries) const;
 

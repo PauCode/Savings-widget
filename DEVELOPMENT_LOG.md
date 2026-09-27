@@ -46,3 +46,6 @@
 - `data/MoneySaverWindow` (native fallback) was updated to use `GoalManager` as well, but keeps operating on whichever goal is currently active in the shared data files (no goal-selector UI in the native fallback).
 - Updated `scripts/build.ps1` to compile the new `bin/GoalManager.cpp`.
 - Validation: iteration 49 built successfully; the WebView window launched responsively and the migration correctly created `current/goals/default/` with the pre-existing balance/goal, generating a valid `current/goals/index.txt`.
+- Fixed a rounding bug where depositing e.g. 100 RON showed as 99.98 RON: balances were stored in USD cents and converted back to RON for display, and quantizing to USD cents on every deposit lost precision on the round trip. Balances are now stored directly in RON cents (like the goal target), removing the round trip entirely. Added a one-time per-goal migration (`balance-unit.txt` marker) that converts any pre-existing USD-cent balance to RON once rates are available, so older goal directories aren't corrupted by the unit change.
+- Validation: iteration 50 built successfully and the WebView window launched responsively.
+

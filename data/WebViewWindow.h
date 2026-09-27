@@ -60,6 +60,7 @@ private:
     void SendState(const std::wstring& status = {});
     void RequestFallback();
     void ResizeWebView();
+    void MigrateLegacyBalanceIfNeeded();
     std::vector<std::wstring> FindThemes() const;
     void LoadSelectedTheme();
     void SaveSelectedTheme() const;

@@ -38,6 +38,7 @@ private:
     void SetMode(bool isAdding);
     void ResetSavings();
     void FinalizeDefaultGoalIfNeeded();
+    void MigrateLegacyBalanceIfNeeded();
 
     HINSTANCE instance_ = nullptr;
     HWND window_ = nullptr;

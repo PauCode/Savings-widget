@@ -259,8 +259,19 @@ void NativeFallbackWindow::HandleRatesLoaded() {
     }
 
     ratesLoading_ = false;
+    MigrateLegacyBalanceIfNeeded();
     FinalizeDefaultGoalIfNeeded();
     UpdateDisplay();
+}
+
+void NativeFallbackWindow::MigrateLegacyBalanceIfNeeded() {
+    if (!ratesAvailable_ || !goalManager_.ActiveGoalNeedsLegacyUnitMigration()) {
+        return;
+    }
+
+    const auto convertedRon = currencyRates_.Convert(
+        goalManager_.GetActiveSavedCents() / 100.0, "USD", "RON");
+    goalManager_.MigrateActiveGoalBalanceToRon(convertedRon.value_or(0.0));
 }
 
 void NativeFallbackWindow::FinalizeDefaultGoalIfNeeded() {
@@ -292,25 +303,20 @@ void NativeFallbackWindow::UpdateDisplay() {
         return;
     }
 
-    const auto savedRon = currencyRates_.Convert(
-        savedCents / 100.0, "USD", "RON");
-    if (!savedRon || targetRonCents <= 0) {
+    if (targetRonCents <= 0) {
         SetWindowTextW(savedLabel_, L"Saved: conversion unavailable");
         SetWindowTextW(goalLabel_, L"Goal: conversion unavailable");
         SetWindowTextW(statusLabel_, L"Could not convert the current balance.");
         return;
     }
 
-    const int savedRonCents = static_cast<int>(std::lround(*savedRon * 100.0));
-    progress_.Update(savedRonCents, targetRonCents);
-
     SetWindowTextW(
-        savedLabel_, (L"Saved: " + FormatMoney(*savedRon, L"RON")).c_str());
+        savedLabel_, (L"Saved: " + FormatMoney(savedCents / 100.0, L"RON")).c_str());
     SetWindowTextW(
         goalLabel_, (L"Goal: " + FormatMoney(
             targetRonCents / 100.0, L"RON")).c_str());
     SetWindowTextW(
-        statusLabel_, savedRonCents >= targetRonCents
+        statusLabel_, savedCents >= targetRonCents
                           ? L"Goal reached. Great work!"
                           : isAdding_ ? L"Every deposit gets you closer."
                                       : L"Remove funds when you need them.");
@@ -342,15 +348,9 @@ void NativeFallbackWindow::AddDeposit(double amountRon, bool clearAmountEdit) {
         return;
     }
 
-    const auto amountUsd = currencyRates_.Convert(amountRon, "RON", "USD");
-    if (!amountUsd || *amountUsd <= 0.0) {
-        SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
-        return;
-    }
-
     const DepositResult result = isAdding_
-        ? goalManager_.AddDeposit(*amountUsd, amountRon)
-        : goalManager_.RemoveFunds(*amountUsd, amountRon);
+        ? goalManager_.AddDeposit(amountRon)
+        : goalManager_.RemoveFunds(amountRon);
     if (result == DepositResult::InvalidAmount) {
         SetWindowTextW(statusLabel_, L"Enter a valid amount greater than 0 RON.");
         return;
