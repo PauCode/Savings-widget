@@ -73,6 +73,9 @@
 - Validation: iteration 82 built successfully; its ZIP contained only runtime files, launched successfully after extraction to `%TEMP%`, and created the AppData storage directory.
 - Fixed clean first-run behavior: when the AppData folder is absent, the app now creates an empty goal index and opens Create jar instead of restoring repository data or creating a default jar. Validation: iteration 84 built successfully; a temporary clean-AppData launch created zero goal directories, and the original AppData folder was restored after the test.
 - Added a first-run Start with Windows choice before Create jar. `bin/StartupSettings.h/.cpp` persists Yes/No in AppData and manages the per-user `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` entry without elevation; isolated `startup-settings.js/.css` provide the required-choice dialog. Validation: iteration 85 built successfully and the portable ZIP includes the startup UI assets.
+- Added an optional monthly savings notification. `bin/ReminderSettings.h/.cpp` stores the day, default/custom message, and the last notified month in `reminder.txt`; the window checks once a minute and raises a Windows notification through the existing tray icon, clamping to the last day in shorter months. A Create notification control beside the jar actions opens the isolated `reminder.js/.css` dialog for the day, default message, and custom text.
+- Renamed the built executable to `Savings Jar.exe` and updated the startup registration to match.
+- Validation: iteration 86 built successfully; the ZIP contains `Savings Jar.exe` plus the reminder assets, and a due reminder recorded `lastShown=2026-09` on launch so it cannot repeat in the same month.
 
 
 

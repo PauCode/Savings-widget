@@ -9,8 +9,10 @@
     <link rel="stylesheet" href="goal-management.css">
     <link rel="stylesheet" href="close-behavior.css">
     <link rel="stylesheet" href="startup-settings.css">
+    <link rel="stylesheet" href="reminder.css">
     <script src="wave-view.js" defer></script>
     <script src="startup-settings.js" defer></script>
+    <script src="reminder.js" defer></script>
     <script src="goal-management.js" defer></script>
     <script src="close-behavior.js" defer></script>
     <script src="app.js" defer></script>
@@ -41,6 +43,7 @@
                 <select id="goal-select" class="goal-select" aria-label="Choose a savings jar"></select>
                 <button id="delete-goal-button" class="goal-delete-button" type="button" title="Delete selected jar" aria-label="Delete selected jar">X</button>
                 <button id="create-goal-button" class="goal-pill goal-pill-add" type="button">+ New jar</button>
+                <button id="create-reminder-button" class="reminder-pill" type="button">Create notification</button>
                 <button id="show-archived-button" class="archived-jars-button" type="button">Archived jars</button>
             </div>
 
@@ -211,7 +214,7 @@
                 </label>
                 <div class="close-behavior-actions">
                     <button id="close-app-button" class="close-app-button" type="button">Close</button>
-                    <button id="minimize-app-button" class="primary-button" type="button">Minimise to taskbar</button>
+                    <button id="minimize-app-button" class="primary-button" type="button">Minimise to background</button>
                 </div>
             </div>
         </dialog>
@@ -225,6 +228,29 @@
                     <button id="enable-startup-button" class="primary-button" type="button">Yes</button>
                 </div>
             </div>
+        </dialog>
+        <dialog id="reminder-dialog" class="goal-dialog reminder-dialog" aria-labelledby="reminder-title">
+            <form id="reminder-form">
+                <p class="eyebrow">MONTHLY NOTIFICATION</p>
+                <h2 id="reminder-title">Create notification</h2>
+                <label class="reminder-check">
+                    <input id="reminder-enabled" type="checkbox">
+                    <span>Remind me every month</span>
+                </label>
+                <label for="reminder-day">Day of the month</label>
+                <select id="reminder-day"></select>
+                <label class="reminder-check">
+                    <input id="reminder-default-message" type="checkbox" checked>
+                    <span>Keep the default message</span>
+                </label>
+                <label for="reminder-message">Custom message</label>
+                <textarea id="reminder-message" rows="3" maxlength="180"></textarea>
+                <p id="reminder-error" class="goal-error" role="status" aria-live="polite"></p>
+                <div class="dialog-actions">
+                    <button id="cancel-reminder" class="preset-button" type="button">Cancel</button>
+                    <button class="primary-button" type="submit">Save notification</button>
+                </div>
+            </form>
         </dialog>
     </div>
 </body>

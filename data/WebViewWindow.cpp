@@ -19,6 +19,7 @@
 #include <dwmapi.h>
 
 #include "../bin/AppPaths.h"
+#include "../bin/SingleInstance.h"
 #include "Resource.h"
 
 #pragma comment(lib, "Ole32.lib")
@@ -110,6 +111,17 @@ std::string NarrowAscii(const std::wstring& text) {
     }
     return narrow;
 }
+
+int DaysInMonth(int year, int month) {
+    constexpr int kDays[]{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month < 1 || month > 12) {
+        return 28;
+    }
+    if (month == 2 && (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))) {
+        return 29;
+    }
+    return kDays[month - 1];
+}
 } // namespace
 
 WebViewWindow::~WebViewWindow() {
@@ -140,6 +152,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         LoadSelectedCurrency();
         closeBehaviorSettings_.Load();
         startupSettings_.Load();
+        reminderSettings_.Load();
 
         WNDCLASSEXW windowClass{};
         windowClass.cbSize = sizeof(windowClass);
@@ -173,6 +186,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         ShowWindow(window_, showCommand);
         UpdateWindow(window_);
         AddTrayIcon();
+        StartReminderTimer();
 
         MSG message{};
         int messageResult = 0;
@@ -216,6 +230,11 @@ LRESULT CALLBACK WebViewWindow::WindowProc(
 
 LRESULT WebViewWindow::HandleMessage(
     UINT message, WPARAM wParam, LPARAM lParam) {
+    if (message == GetShowExistingInstanceMessage()) {
+        RestoreFromTray();
+        return 0;
+    }
+
     switch (message) {
     case WM_SIZE:
         ResizeWebView();
@@ -258,7 +277,14 @@ LRESULT WebViewWindow::HandleMessage(
         HandleRatesLoaded();
         return 0;
 
+    case WM_TIMER:
+        if (wParam == kReminderTimerId) {
+            CheckReminderDue();
+        }
+        return 0;
+
     case WM_DESTROY:
+        KillTimer(window_, kReminderTimerId);
         RemoveTrayIcon();
         PostQuitMessage(0);
         return 0;
@@ -318,8 +344,61 @@ void WebViewWindow::RestoreFromTray() {
     if (!window_) {
         return;
     }
-    ShowWindow(window_, SW_RESTORE);
+    ShowWindow(window_, SW_SHOW);
+    if (IsIconic(window_)) {
+        ShowWindow(window_, SW_RESTORE);
+    }
     SetForegroundWindow(window_);
+}
+
+void WebViewWindow::StartReminderTimer() {
+    if (!window_) {
+        return;
+    }
+    SetTimer(window_, kReminderTimerId, kReminderIntervalMs, nullptr);
+    CheckReminderDue();
+}
+
+void WebViewWindow::CheckReminderDue() {
+    if (!reminderSettings_.IsEnabled()) {
+        return;
+    }
+
+    SYSTEMTIME now{};
+    GetLocalTime(&now);
+
+    wchar_t monthStamp[8]{};
+    swprintf_s(monthStamp, L"%04u-%02u", now.wYear, now.wMonth);
+
+    // Months shorter than the chosen day fire on their last day instead.
+    const int effectiveDay =
+        (std::min)(reminderSettings_.GetDayOfMonth(), DaysInMonth(now.wYear, now.wMonth));
+    if (now.wDay < effectiveDay) {
+        return;
+    }
+
+    if (!reminderSettings_.IsDueFor(monthStamp, now.wDay)) {
+        return;
+    }
+
+    ShowReminderNotification(reminderSettings_.ResolveMessage());
+    reminderSettings_.MarkShown(monthStamp);
+}
+
+void WebViewWindow::ShowReminderNotification(const std::wstring& message) {
+    if (!trayIconAdded_) {
+        return;
+    }
+
+    NOTIFYICONDATAW notification{};
+    notification.cbSize = sizeof(notification);
+    notification.hWnd = window_;
+    notification.uID = kTrayIconId;
+    notification.uFlags = NIF_INFO;
+    notification.dwInfoFlags = NIIF_INFO;
+    wcscpy_s(notification.szInfoTitle, L"Savings Jar");
+    wcsncpy_s(notification.szInfo, message.c_str(), _TRUNCATE);
+    Shell_NotifyIconW(NIM_MODIFY, &notification);
 }
 
 void WebViewWindow::ApplyModernTitleBar() {
@@ -533,6 +612,12 @@ void WebViewWindow::HandleWebMessage(
                 message.GetNamedBoolean(L"remember", false));
         } else if (type == L"startupChoice") {
             HandleStartupChoice(message.GetNamedBoolean(L"enabled", false));
+        } else if (type == L"reminder") {
+            HandleReminderUpdate(
+                message.GetNamedBoolean(L"enabled", false),
+                static_cast<int>(message.GetNamedNumber(L"day", 1.0)),
+                message.GetNamedBoolean(L"useDefaultMessage", true),
+                std::wstring(message.GetNamedString(L"message", L"")));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -802,7 +887,7 @@ void WebViewWindow::HandleCloseRequest() {
         DestroyWindow(window_);
         return;
     case CloseBehavior::Minimize:
-        ShowWindow(window_, SW_MINIMIZE);
+        ShowWindow(window_, SW_HIDE);
         return;
     case CloseBehavior::Ask:
         break;
@@ -812,7 +897,7 @@ void WebViewWindow::HandleCloseRequest() {
         return;
     }
     if (!webView_ || !pageReady_) {
-        ShowWindow(window_, SW_MINIMIZE);
+        ShowWindow(window_, SW_HIDE);
         return;
     }
     closePromptOpen_ = true;
@@ -834,7 +919,7 @@ void WebViewWindow::HandleCloseBehaviorSelection(
     if (selected == CloseBehavior::Close) {
         DestroyWindow(window_);
     } else {
-        ShowWindow(window_, SW_MINIMIZE);
+        ShowWindow(window_, SW_HIDE);
     }
 }
 
@@ -846,6 +931,23 @@ void WebViewWindow::HandleStartupChoice(bool enabled) {
     SendState(enabled
         ? L"Savings Jar will start with Windows."
         : L"Windows startup was left disabled.");
+}
+
+void WebViewWindow::HandleReminderUpdate(
+    bool enabled, int dayOfMonth, bool useDefaultMessage,
+    const std::wstring& message) {
+    if (!reminderSettings_.Configure(
+            enabled, dayOfMonth, useDefaultMessage, message)) {
+        SendState(L"Could not save the monthly notification.");
+        return;
+    }
+
+    if (enabled) {
+        CheckReminderDue();
+        SendState(L"Monthly notification saved.");
+    } else {
+        SendState(L"Monthly notification turned off.");
+    }
 }
 
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
@@ -947,6 +1049,16 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << L",\"ratesRefreshing\":" << (ratesRefreshing_ ? L"true" : L"false")
          << L",\"startupChoiceRequired\":"
          << (!startupSettings_.IsAnswered() ? L"true" : L"false")
+         << L",\"reminderEnabled\":"
+         << (reminderSettings_.IsEnabled() ? L"true" : L"false")
+         << L",\"reminderDay\":" << reminderSettings_.GetDayOfMonth()
+         << L",\"reminderUsesDefaultMessage\":"
+         << (reminderSettings_.UsesDefaultMessage() ? L"true" : L"false")
+         << L",\"reminderMessage\":\""
+         << EscapeJson(reminderSettings_.GetCustomMessage())
+         << L"\",\"reminderDefaultMessage\":\""
+         << EscapeJson(ReminderSettings::DefaultMessage())
+         << L"\""
          << L",\"balanceRon\":" << balanceDisplay.value_or(0.0)
          << L",\"goalRon\":" << goalDisplay.value_or(0.0)
          << L",\"remainingRon\":" << remainingDisplay.value_or(0.0)

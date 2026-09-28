@@ -16,6 +16,7 @@
 #include "../bin/CurrencyRates.h"
 #include "../bin/CloseBehaviorSettings.h"
 #include "../bin/GoalManager.h"
+#include "../bin/ReminderSettings.h"
 #include "../bin/StartupSettings.h"
 
 class WebViewWindow {
@@ -46,6 +47,8 @@ private:
     static constexpr UINT kTrayIconId = 1;
     static constexpr UINT kTrayMenuRestoreId = 1;
     static constexpr UINT kTrayMenuExitId = 2;
+    static constexpr UINT_PTR kReminderTimerId = 1;
+    static constexpr UINT kReminderIntervalMs = 60000;
 
     static LRESULT CALLBACK WindowProc(
         HWND window, UINT message, WPARAM wParam, LPARAM lParam);
@@ -68,6 +71,12 @@ private:
     void HandleCloseRequest();
     void HandleCloseBehaviorSelection(const std::wstring& action, bool remember);
     void HandleStartupChoice(bool enabled);
+    void HandleReminderUpdate(
+        bool enabled, int dayOfMonth, bool useDefaultMessage,
+        const std::wstring& message);
+    void StartReminderTimer();
+    void CheckReminderDue();
+    void ShowReminderNotification(const std::wstring& message);
     void HandleThemeSelection(const std::wstring& filename);
     void HandleCurrencySelection(const std::wstring& code);
     void HandleRefreshRates();
@@ -106,6 +115,7 @@ private:
     CurrencyRates currencyRates_;
     CloseBehaviorSettings closeBehaviorSettings_;
     StartupSettings startupSettings_;
+    ReminderSettings reminderSettings_;
     std::vector<std::wstring> themes_;
     std::wstring selectedTheme_ = L"default";
     std::wstring selectedCurrency_ = L"USD";

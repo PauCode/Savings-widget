@@ -28,7 +28,7 @@ bool SetRunEntry(bool enabled) {
 
     LONG result = ERROR_SUCCESS;
     if (enabled) {
-        const auto executable = AppPaths::ExecutableDirectory() / L"MoneySavingWidget.exe";
+        const auto executable = AppPaths::ExecutableDirectory() / L"Savings Jar.exe";
         if (!std::filesystem::is_regular_file(executable)) {
             RegCloseKey(key);
             return false;

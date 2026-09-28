@@ -1,0 +1,69 @@
+.reminder-pill {
+    min-height: 2.125rem;
+    padding: 0 0.875rem;
+    border: 1px dashed var(--panel-edge);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.reminder-pill:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.reminder-pill.is-active {
+    border-style: solid;
+    border-color: var(--accent-strong);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.reminder-dialog {
+    width: min(420px, calc(100vw - 32px));
+}
+
+.reminder-dialog select,
+.reminder-dialog textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--panel-edge);
+    border-radius: 7px;
+    background: var(--field);
+    color: var(--text);
+    font: inherit;
+    resize: vertical;
+}
+
+.reminder-dialog select:disabled,
+.reminder-dialog textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+.reminder-check {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: var(--text);
+    font-size: 0.8125rem;
+    cursor: pointer;
+}
+
+.reminder-check input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
+@media (max-width: 720px) {
+    .reminder-pill {
+        flex: 1 1 auto;
+    }
+}

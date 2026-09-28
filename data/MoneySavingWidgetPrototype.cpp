@@ -3,10 +3,16 @@
 
 #include <windows.h>
 
+#include "../bin/SingleInstance.h"
 #include "MoneySaverWindow.h"
 #include "WebViewWindow.h"
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
+    SingleInstanceGuard singleInstance;
+    if (!singleInstance.Acquire()) {
+        return 0;
+    }
+
     {
         WebViewWindow webView;
         int exitCode = 0;

@@ -17,6 +17,10 @@ Writable data is stored in `%APPDATA%\PauCode\Savings Jar`, including goals, pre
 
 Before the first jar is created, the app asks whether it should start with Windows. Choosing Yes adds a per-user `PauCode Savings Jar` entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; choosing No leaves startup disabled. The answer is stored in `%APPDATA%\PauCode\Savings Jar\start-with-windows.txt` so the question is only asked once.
 
+## Monthly notification
+
+Use **Create notification** beside the jar controls to pick a day of the month and either keep the default reminder text or write a custom message. The reminder is delivered as a standard Windows notification through the app's tray icon, fires once per calendar month, and falls back to the last day in shorter months. Settings are stored in `%APPDATA%\PauCode\Savings Jar\reminder.txt`.
+
 ## Development log
 
 See [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md) for implementation notes and verification history.

@@ -13,6 +13,7 @@
 
 #include <commctrl.h>
 
+#include "../bin/SingleInstance.h"
 #include "Resource.h"
 
 #pragma comment(lib, "Comctl32.lib")
@@ -105,6 +106,15 @@ LRESULT CALLBACK NativeFallbackWindow::WindowProc(
 
 LRESULT NativeFallbackWindow::HandleMessage(
     UINT message, WPARAM wParam, LPARAM lParam) {
+    if (message == GetShowExistingInstanceMessage()) {
+        ShowWindow(window_, SW_SHOW);
+        if (IsIconic(window_)) {
+            ShowWindow(window_, SW_RESTORE);
+        }
+        SetForegroundWindow(window_);
+        return 0;
+    }
+
     switch (message) {
     case WM_CREATE:
         if (!CreateControls()) {
