@@ -98,6 +98,21 @@
     font-weight: 500;
 }
 
+.create-goal-target-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.create-goal-target-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.create-goal-target-row select {
+    flex: none;
+}
+
 .completed-goal-button {
     min-width: 8rem;
     min-height: 3rem;

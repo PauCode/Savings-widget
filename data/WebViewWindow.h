@@ -94,6 +94,7 @@ private:
     void LoadSelectedCurrency();
     void SaveSelectedCurrency() const;
     void AddTrayIcon();
+    void UpdateTrayTooltip();
     void RemoveTrayIcon();
     void ShowTrayContextMenu();
     void RestoreFromTray();

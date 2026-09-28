@@ -158,7 +158,10 @@
                 <label for="create-goal-name">Jar name <span class="input-hint">(MAX 30 characters)</span></label>
                 <input id="create-goal-name" name="name" type="text" maxlength="30" required>
                 <label for="create-goal-target" id="create-goal-target-label">Target amount</label>
-                <input id="create-goal-target" name="target" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required>
+                <div class="create-goal-target-row">
+                    <input id="create-goal-target" name="target" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required>
+                    <select id="create-goal-currency" class="currency-code-select" aria-label="Choose the jar currency"></select>
+                </div>
                 <p id="create-goal-error" class="goal-error" role="status" aria-live="polite"></p>
                 <div class="dialog-actions">
                     <button id="cancel-create-goal" class="preset-button" type="button">Cancel</button>

@@ -307,6 +307,40 @@ void WebViewWindow::AddTrayIcon() {
     wcscpy_s(trayIcon_.szTip, L"Savings Jar");
 
     trayIconAdded_ = Shell_NotifyIconW(NIM_ADD, &trayIcon_) != FALSE;
+    UpdateTrayTooltip();
+}
+
+void WebViewWindow::UpdateTrayTooltip() {
+    if (!trayIconAdded_) {
+        return;
+    }
+
+    std::wstring tooltip = L"Savings Jar";
+    const std::wstring& name = goalManager_.GetActiveGoalName();
+    if (!name.empty()) {
+        const double savedRon = goalManager_.GetActiveSavedCents() / 100.0;
+        const double goalRon = goalManager_.GetActiveGoalTargetRonCents() / 100.0;
+        std::wstring currency = L"RON";
+        double saved = savedRon;
+        double goal = goalRon;
+        if (ratesAvailable_) {
+            const auto savedDisplay = ConvertToDisplayCurrency(savedRon);
+            const auto goalDisplay = ConvertToDisplayCurrency(goalRon);
+            if (savedDisplay && goalDisplay) {
+                saved = *savedDisplay;
+                goal = *goalDisplay;
+                currency = selectedCurrency_;
+            }
+        }
+
+        wchar_t amounts[96]{};
+        swprintf_s(amounts, L"%.2f / %.2f %s", saved, goal, currency.c_str());
+        tooltip += L"\n" + name + L"\n" + amounts;
+    }
+
+    trayIcon_.uFlags = NIF_TIP;
+    wcsncpy_s(trayIcon_.szTip, tooltip.c_str(), _TRUNCATE);
+    Shell_NotifyIconW(NIM_MODIFY, &trayIcon_);
 }
 
 void WebViewWindow::RemoveTrayIcon() {
@@ -999,6 +1033,7 @@ std::optional<double> WebViewWindow::ConvertToDisplayCurrency(double amountRon) 
 }
 
 void WebViewWindow::SendState(const std::wstring& status) {
+    UpdateTrayTooltip();
     if (!webView_ || !pageReady_) {
         return;
     }

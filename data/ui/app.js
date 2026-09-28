@@ -30,6 +30,7 @@ const createGoalDialog = document.querySelector("#create-goal-dialog");
 const createGoalForm = document.querySelector("#create-goal-form");
 const createGoalName = document.querySelector("#create-goal-name");
 const createGoalTarget = document.querySelector("#create-goal-target");
+const createGoalCurrency = document.querySelector("#create-goal-currency");
 const createGoalError = document.querySelector("#create-goal-error");
 const cancelCreateGoalButton = document.querySelector("#cancel-create-goal");
 const submitCreateGoalButton = document.querySelector("#submit-create-goal");
@@ -86,14 +87,19 @@ function setMode(mode) {
 }
 
 function setCurrencyOptions(currencies, selectedCurrency) {
-    currencySelect.replaceChildren();
-    currencies.forEach((code) => {
-        const option = document.createElement("option");
-        option.value = code;
-        option.textContent = code;
-        currencySelect.append(option);
+    [currencySelect, createGoalCurrency].forEach((select) => {
+        const previous = select.value;
+        select.replaceChildren();
+        currencies.forEach((code) => {
+            const option = document.createElement("option");
+            option.value = code;
+            option.textContent = code;
+            select.append(option);
+        });
+        select.value = select === createGoalCurrency && createGoalDialog.open && previous
+            ? previous
+            : selectedCurrency;
     });
-    currencySelect.value = selectedCurrency;
 }
 
 function setThemeOptions(themes, selectedTheme) {
@@ -177,7 +183,9 @@ function renderState(state) {
         currentCurrency = state.currency;
         currencyTag.textContent = currentCurrency;
         goalAmountLabel.textContent = `New goal amount (${currentCurrency})`;
-        createGoalTargetLabel.textContent = `Target amount (${currentCurrency})`;
+        if (!createGoalDialog.open) {
+            createGoalTargetLabel.textContent = `Target amount (${currentCurrency})`;
+        }
         updatePresetLabels();
     }
 
@@ -303,12 +311,18 @@ goalForm.addEventListener("submit", (event) => {
 createGoalButton.addEventListener("click", () => {
     createGoalError.textContent = "";
     createGoalForm.reset();
+    createGoalCurrency.value = currentCurrency;
+    createGoalTargetLabel.textContent = `Target amount (${currentCurrency})`;
     createGoalDialog.showModal();
     createGoalName.focus();
 });
 
 cancelCreateGoalButton.addEventListener("click", () => {
     createGoalDialog.close();
+});
+
+createGoalCurrency.addEventListener("change", () => {
+    createGoalTargetLabel.textContent = `Target amount (${createGoalCurrency.value})`;
 });
 
 createGoalForm.addEventListener("submit", (event) => {
@@ -320,8 +334,12 @@ createGoalForm.addEventListener("submit", (event) => {
         return;
     }
     if (!Number.isFinite(target) || target <= 0 || target > 1000000) {
-        createGoalError.textContent = `Enter a target between 0.01 and 1,000,000 ${currentCurrency}.`;
+        createGoalError.textContent = `Enter a target between 0.01 and 1,000,000 ${createGoalCurrency.value}.`;
         return;
+    }
+    // The backend converts the target from the display currency, so switch it first.
+    if (createGoalCurrency.value && createGoalCurrency.value !== currentCurrency) {
+        postMessage({ type: "currency", code: createGoalCurrency.value });
     }
     postMessage({ type: "createGoal", name, target });
     createGoalDialog.close();
