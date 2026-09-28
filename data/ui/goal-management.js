@@ -12,6 +12,9 @@
     const archiveCompletedButton = document.querySelector("#archive-completed-goal");
     const deleteCompletedButton = document.querySelector("#delete-completed-goal");
     const keepCompletedButton = document.querySelector("#keep-completed-goal");
+    const createFromCompletedButton = document.querySelector("#create-from-completed-goal");
+    const completedGoalMessage = document.querySelector("#completed-goal-message");
+    const createGoalButton = document.querySelector("#create-goal-button");
     const showArchivedButton = document.querySelector("#show-archived-button");
     const archivedDialog = document.querySelector("#archived-goals-dialog");
     const archivedList = document.querySelector("#archived-goals-list");
@@ -20,6 +23,12 @@
 
     let activeGoalId = "";
     let activeGoalName = "";
+    let hasAlternativeGoal = false;
+    let completionWarningActive = false;
+    let completionWarningTimer = 0;
+
+    const completionPrompt = "Do you want to archive, delete or keep this jar?";
+    const noOtherJarsMessage = "Cannot delete/archive jar as there aren't any other jars remaining. Please create another jar and try again.";
 
     function postMessage(message) {
         window.chrome?.webview?.postMessage(message);
@@ -58,10 +67,15 @@
     });
 
     completedGoalButton.addEventListener("click", () => {
+        resetCompletionWarning();
         completedGoalDialog.showModal();
     });
 
     archiveCompletedButton.addEventListener("click", () => {
+        if (!hasAlternativeGoal) {
+            showCompletionWarning();
+            return;
+        }
         if (activeGoalId) {
             postMessage({ type: "archiveGoal", id: activeGoalId });
             completedGoalDialog.close();
@@ -69,13 +83,51 @@
     });
 
     deleteCompletedButton.addEventListener("click", () => {
+        if (!hasAlternativeGoal) {
+            showCompletionWarning();
+            return;
+        }
         if (activeGoalId) {
             postMessage({ type: "deleteGoal", id: activeGoalId });
             completedGoalDialog.close();
         }
     });
 
-    keepCompletedButton.addEventListener("click", () => completedGoalDialog.close());
+    keepCompletedButton.addEventListener("click", () => {
+        resetCompletionWarning();
+        completedGoalDialog.close();
+    });
+
+    completedGoalDialog.addEventListener("close", resetCompletionWarning);
+
+    createFromCompletedButton.addEventListener("click", () => {
+        resetCompletionWarning();
+        completedGoalDialog.close();
+        createGoalButton.click();
+    });
+
+    function showCompletionWarning() {
+        if (completionWarningActive) {
+            return;
+        }
+        completionWarningActive = true;
+        completedGoalMessage.textContent = noOtherJarsMessage;
+        completedGoalMessage.classList.add("is-warning");
+        createFromCompletedButton.hidden = false;
+        completionWarningTimer = window.setTimeout(() => {
+            completedGoalMessage.classList.add("is-fading");
+            window.setTimeout(resetCompletionWarning, 220);
+        }, 5000);
+    }
+
+    function resetCompletionWarning() {
+        window.clearTimeout(completionWarningTimer);
+        completionWarningTimer = 0;
+        completionWarningActive = false;
+        completedGoalMessage.textContent = completionPrompt;
+        completedGoalMessage.classList.remove("is-warning", "is-fading");
+        createFromCompletedButton.hidden = true;
+    }
 
     showArchivedButton.addEventListener("click", () => archivedDialog.showModal());
     closeArchivedButton.addEventListener("click", () => archivedDialog.close());
@@ -110,11 +162,13 @@
             });
             goalSelect.value = selectedId;
 
-            const hasAlternative = goals.length > 1;
-            deleteGoalButton.disabled = !hasAlternative;
+            hasAlternativeGoal = goals.length > 1;
+            deleteGoalButton.disabled = !hasAlternativeGoal;
             completedGoalButton.hidden = !isActiveGoalComplete;
-            archiveCompletedButton.disabled = !canArchiveActiveGoal;
-            deleteCompletedButton.disabled = !hasAlternative;
+            archiveCompletedButton.classList.toggle("is-unavailable", !canArchiveActiveGoal);
+            archiveCompletedButton.setAttribute("aria-disabled", String(!canArchiveActiveGoal));
+            deleteCompletedButton.classList.toggle("is-unavailable", !hasAlternativeGoal);
+            deleteCompletedButton.setAttribute("aria-disabled", String(!hasAlternativeGoal));
             renderArchivedGoals(archivedGoals);
         }
     };
