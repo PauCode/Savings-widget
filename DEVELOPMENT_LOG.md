@@ -58,6 +58,17 @@
 - Enlarged the jar further (`.jar-scene` clamp width/height raised substantially, `.savings-view` grid gives the jar column a bigger share) since the account panel's taller content left unused space around it. Sped up `wave-view.js`: wave phase speed roughly tripled and amplitude roughly doubled so the surface is visibly animated instead of near-static, and the fill-level spring (progress acceleration/damping) was tightened so the liquid catches up to deposits/withdrawals noticeably faster.
 - Validation: iteration 57 built successfully and the WebView window launched responsively.
 
+## 2026-09-28
+
+- Moved the default theme assets to `Theme/default/` and updated theme discovery to use `Theme/<name>/<name>.css`. Added `Theme/default/icon.png`, generated a multi-resolution `data/AppIcon.ico`, embedded it through `data/AppResources.rc`, and applied it to the executable, windows, and system-tray icon.
+- Added close-to-tray support to the WebView window. The tray icon restores the app on click and provides Open/Exit actions; the native title bar now uses app-matched dark caption, text, and border colors. Added thin theme-integrated WebView scrollbars.
+- Added isolated jar lifecycle support in `bin/GoalLifecycle.cpp`: active jars can be renamed or deleted, completed jars can be archived under `current/goals/archived/`, and at least one active jar must remain. Archived metadata is persisted separately.
+- Replaced the jar-pill row with a jar dropdown while keeping New jar separate. Added a delete control beside the dropdown, an Archived jars dialog, a completion-only Archive or delete action, and an Archive/Delete/Keep dialog. When the last active jar cannot be removed, the dialog shows a five-second warning, ignores repeated clicks during that interval, and offers Create jar beside Keep before fading back to the normal prompt.
+- Added a remaining-sum display above Current balance, calculated in the selected display currency. Limited jar names to 30 characters in both UI and backend sanitization, added the creation-only `(MAX 30 characters)` hint, and added an Edit dialog beside the active jar title.
+- Limited Recent activity to five visible fixed-height entries with themed scrolling for older entries. Added visible pressed feedback to enabled buttons and a smooth sliding indicator between Add and Remove, with reduced-motion support.
+- Added isolated close behavior settings in `bin/CloseBehaviorSettings.h/.cpp` and `data/ui/close-behavior.js/.css`. Pressing X asks whether to Close or Minimise to taskbar; an optional Do not ask again toggle persists the selection in `current/close-behavior.txt`.
+- Validation: MSVC builds succeeded through iteration 79, with frontend and C++ diagnostics clear after the final changes.
+
 
 
 
