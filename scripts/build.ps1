@@ -47,6 +47,7 @@ try {
         'bin\SavingsData.cpp',
         'bin\GoalManager.cpp',
         'bin\GoalLifecycle.cpp',
+        'bin\CloseBehaviorSettings.cpp',
         'bin\CurrencyRates.cpp',
         '/link',
         ('/LIBPATH:' + (Join-Path $webViewNativePath 'x64')),

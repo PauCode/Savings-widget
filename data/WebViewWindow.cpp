@@ -155,6 +155,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         }
         LoadSelectedTheme();
         LoadSelectedCurrency();
+        closeBehaviorSettings_.Load();
 
         WNDCLASSEXW windowClass{};
         windowClass.cbSize = sizeof(windowClass);
@@ -237,7 +238,7 @@ LRESULT WebViewWindow::HandleMessage(
         return 0;
 
     case WM_CLOSE:
-        ShowWindow(window_, SW_HIDE);
+        HandleCloseRequest();
         return 0;
 
     case kTrayIconMessage:
@@ -534,10 +535,18 @@ void WebViewWindow::HandleWebMessage(
             HandleGoalCreate(
                 std::wstring(message.GetNamedString(L"name")),
                 message.GetNamedNumber(L"target"));
+        } else if (type == L"renameGoal") {
+            HandleGoalRename(
+                std::wstring(message.GetNamedString(L"id")),
+                std::wstring(message.GetNamedString(L"name")));
         } else if (type == L"deleteGoal") {
             HandleGoalDelete(std::wstring(message.GetNamedString(L"id")));
         } else if (type == L"archiveGoal") {
             HandleGoalArchive(std::wstring(message.GetNamedString(L"id")));
+        } else if (type == L"closeBehavior") {
+            HandleCloseBehaviorSelection(
+                std::wstring(message.GetNamedString(L"action")),
+                message.GetNamedBoolean(L"remember", false));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -783,6 +792,15 @@ void WebViewWindow::HandleGoalDelete(const std::wstring& id) {
     SendState(L"Jar deleted.");
 }
 
+void WebViewWindow::HandleGoalRename(
+    const std::wstring& id, const std::wstring& name) {
+    if (!goalManager_.RenameGoal(id, name)) {
+        SendState(L"Enter a valid jar name.");
+        return;
+    }
+    SendState(L"Jar renamed.");
+}
+
 void WebViewWindow::HandleGoalArchive(const std::wstring& id) {
     if (!goalManager_.ArchiveGoal(id)) {
         SendState(L"Only completed jars can be archived, and one active jar must remain.");
@@ -790,6 +808,48 @@ void WebViewWindow::HandleGoalArchive(const std::wstring& id) {
     }
     MigrateLegacyBalanceIfNeeded();
     SendState(L"Completed jar archived.");
+}
+
+void WebViewWindow::HandleCloseRequest() {
+    switch (closeBehaviorSettings_.Get()) {
+    case CloseBehavior::Close:
+        DestroyWindow(window_);
+        return;
+    case CloseBehavior::Minimize:
+        ShowWindow(window_, SW_MINIMIZE);
+        return;
+    case CloseBehavior::Ask:
+        break;
+    }
+
+    if (closePromptOpen_) {
+        return;
+    }
+    if (!webView_ || !pageReady_) {
+        ShowWindow(window_, SW_MINIMIZE);
+        return;
+    }
+    closePromptOpen_ = true;
+    webView_->PostWebMessageAsJson(L"{\"type\":\"closeRequested\"}");
+}
+
+void WebViewWindow::HandleCloseBehaviorSelection(
+    const std::wstring& action, bool remember) {
+    closePromptOpen_ = false;
+    const CloseBehavior selected = action == L"close"
+        ? CloseBehavior::Close
+        : CloseBehavior::Minimize;
+
+    if (remember) {
+        closeBehaviorSettings_.Set(selected);
+        closeBehaviorSettings_.Save();
+    }
+
+    if (selected == CloseBehavior::Close) {
+        DestroyWindow(window_);
+    } else {
+        ShowWindow(window_, SW_MINIMIZE);
+    }
 }
 
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
@@ -904,10 +964,12 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << L"\",\"currency\":\"" << EscapeJson(selectedCurrency_)
          << L"\",\"activeGoalId\":\"" << EscapeJson(goalManager_.GetActiveGoalId())
          << L"\",\"activeGoalName\":\"" << EscapeJson(goalManager_.GetActiveGoalName())
-            << L"\",\"canArchiveActiveGoal\":"
-            << ((targetRonCents > 0 && savedCents >= targetRonCents &&
-                goalManager_.GetGoals().size() > 1) ? L"true" : L"false")
-            << L",\"currencies\":[";
+         << L"\",\"isActiveGoalComplete\":"
+         << ((targetRonCents > 0 && savedCents >= targetRonCents) ? L"true" : L"false")
+         << L",\"canArchiveActiveGoal\":"
+         << ((targetRonCents > 0 && savedCents >= targetRonCents &&
+              goalManager_.GetGoals().size() > 1) ? L"true" : L"false")
+         << L",\"currencies\":[";
 
     const auto& supportedCurrencies = CurrencyRates::SupportedCurrencies();
     for (std::size_t index = 0; index < supportedCurrencies.size(); ++index) {

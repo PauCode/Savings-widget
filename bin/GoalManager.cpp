@@ -84,8 +84,8 @@ std::wstring SanitizeGoalName(const std::wstring& rawName) {
     while (!name.empty() && isSpace(name.back())) {
         name.pop_back();
     }
-    if (name.size() > 60) {
-        name.resize(60);
+    if (name.size() > 30) {
+        name.resize(30);
     }
     return name;
 }

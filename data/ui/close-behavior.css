@@ -1,0 +1,63 @@
+.close-behavior-dialog {
+    width: min(430px, calc(100vw - 32px));
+}
+
+.close-behavior-content {
+    padding: 22px;
+}
+
+.close-behavior-content h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.375rem;
+}
+
+.close-behavior-content > p:not(.eyebrow) {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.remember-close-choice {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-top: 1.25rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.remember-close-choice input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    accent-color: var(--accent);
+}
+
+.close-behavior-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 1.25rem;
+}
+
+.close-app-button {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--danger);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--danger);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.close-app-button:hover {
+    background: color-mix(in srgb, var(--danger) 12%, var(--panel));
+}
+
+@media (max-width: 480px) {
+    .close-behavior-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+}

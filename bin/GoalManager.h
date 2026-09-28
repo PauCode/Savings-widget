@@ -38,6 +38,7 @@ public:
 
     bool SelectGoal(const std::wstring& id);
     bool CreateGoal(const std::wstring& name, int targetRonCents, std::wstring& newId);
+    bool RenameGoal(const std::wstring& id, const std::wstring& name);
     bool DeleteGoal(const std::wstring& id);
     bool ArchiveGoal(const std::wstring& id);
 

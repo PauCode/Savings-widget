@@ -16,26 +16,17 @@
     cursor: pointer;
 }
 
-.goal-action-button {
+.goal-delete-button {
     width: 2.125rem;
     height: 2.125rem;
     padding: 0;
     border: 1px solid var(--panel-edge);
     border-radius: 7px;
     background: var(--panel);
-    color: var(--accent);
+    color: var(--danger);
     font: inherit;
     font-weight: 800;
     cursor: pointer;
-}
-
-.goal-action-button:hover:not(:disabled) {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-}
-
-.goal-delete-button {
-    color: var(--danger);
 }
 
 .goal-delete-button:hover:not(:disabled) {
@@ -43,7 +34,7 @@
     background: color-mix(in srgb, var(--danger) 12%, var(--panel));
 }
 
-.goal-action-button:disabled {
+.goal-delete-button:disabled {
     cursor: not-allowed;
     opacity: 0.38;
 }
@@ -64,6 +55,70 @@
 .archived-jars-button:hover {
     border-color: var(--accent);
     color: var(--text);
+}
+
+.account-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.account-heading h2 {
+    margin: 0;
+}
+
+.goal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.goal-title-edit {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.6875rem;
+    cursor: pointer;
+}
+
+.goal-title-edit:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.input-hint {
+    margin-left: 0.25rem;
+    color: var(--muted);
+    font-size: 0.625rem;
+    font-weight: 500;
+}
+
+.completed-goal-button {
+    min-width: 8rem;
+    min-height: 3rem;
+    padding: 0 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 7px;
+    background: var(--accent-strong);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.completed-goal-button:hover {
+    background: var(--accent);
+    color: var(--field);
+}
+
+.completed-goal-button[hidden] {
+    display: none;
 }
 
 .remaining-line {
@@ -116,6 +171,45 @@
     font-size: 0.8125rem;
 }
 
+.completed-goal-content {
+    padding: 22px;
+}
+
+.completed-goal-content h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.375rem;
+}
+
+.completed-goal-content > p:not(.eyebrow) {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.completion-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 1.25rem;
+}
+
+.completion-delete-button {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--danger);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--danger);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.completion-delete-button:disabled,
+.completion-actions .primary-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
 @media (max-width: 720px) {
     .goal-selector {
         flex-wrap: wrap;
@@ -127,5 +221,13 @@
 
     .archived-jars-button {
         margin-left: 0;
+    }
+
+    .account-heading {
+        align-items: flex-start;
+    }
+
+    .completed-goal-button {
+        min-width: 7rem;
     }
 }

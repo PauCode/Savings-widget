@@ -56,10 +56,57 @@ std::string WideToUtf8(const std::wstring& text) {
         length, nullptr, nullptr);
     return narrow;
 }
+
+std::wstring SanitizeGoalName(const std::wstring& rawName) {
+    std::wstring name;
+    name.reserve(rawName.size());
+    for (wchar_t character : rawName) {
+        name.push_back(character == L'|' || character == L'\n' || character == L'\r'
+            ? L' '
+            : character);
+    }
+    const auto isSpace = [](wchar_t character) {
+        return character == L' ' || character == L'\t';
+    };
+    while (!name.empty() && isSpace(name.front())) {
+        name.erase(name.begin());
+    }
+    while (!name.empty() && isSpace(name.back())) {
+        name.pop_back();
+    }
+    if (name.size() > 30) {
+        name.resize(30);
+    }
+    return name;
+}
 } // namespace
 
 const std::vector<GoalInfo>& GoalManager::GetArchivedGoals() const noexcept {
     return archivedGoals_;
+}
+
+bool GoalManager::RenameGoal(const std::wstring& id, const std::wstring& rawName) {
+    const auto goal = std::find_if(
+        goals_.begin(), goals_.end(),
+        [&id](const GoalInfo& candidate) { return candidate.id == id; });
+    const std::wstring name = SanitizeGoalName(rawName);
+    if (goal == goals_.end() || name.empty()) {
+        return false;
+    }
+
+    const std::wstring previousName = goal->name;
+    goal->name = name;
+    if (id == activeId_) {
+        activeName_ = name;
+    }
+    if (!SaveIndex()) {
+        goal->name = previousName;
+        if (id == activeId_) {
+            activeName_ = previousName;
+        }
+        return false;
+    }
+    return true;
 }
 
 bool GoalManager::DeleteGoal(const std::wstring& id) {

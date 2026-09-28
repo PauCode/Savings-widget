@@ -7,6 +7,7 @@ const statusMessage = document.querySelector("#status-message");
 const presetButtons = document.querySelectorAll(".preset-grid .preset-button");
 const addModeButton = document.querySelector("#add-mode");
 const removeModeButton = document.querySelector("#remove-mode");
+const modeToggle = document.querySelector(".mode-toggle");
 const depositTitle = document.querySelector("#deposit-title");
 const resetButton = document.querySelector("#reset-button");
 const balanceValue = document.querySelector("#balance-value");
@@ -75,6 +76,7 @@ function setMode(mode) {
     const adding = activeMode === "add";
     addModeButton.classList.toggle("is-active", adding);
     removeModeButton.classList.toggle("is-active", !adding);
+    modeToggle.classList.toggle("is-remove", !adding);
     addModeButton.setAttribute("aria-pressed", String(adding));
     removeModeButton.setAttribute("aria-pressed", String(!adding));
     depositTitle.textContent = adding ? "Add to your jar" : "Remove from your jar";
@@ -157,7 +159,8 @@ function renderState(state) {
             goals: state.goals,
             activeGoalId: state.activeGoalId,
             archivedGoals: state.archivedGoals || [],
-            canArchiveActiveGoal: Boolean(state.canArchiveActiveGoal)
+            canArchiveActiveGoal: Boolean(state.canArchiveActiveGoal),
+            isActiveGoalComplete: Boolean(state.isActiveGoalComplete)
         });
     }
     if (state.activeGoalName) {

@@ -14,6 +14,7 @@
 #include <wrl.h>
 
 #include "../bin/CurrencyRates.h"
+#include "../bin/CloseBehaviorSettings.h"
 #include "../bin/GoalManager.h"
 
 class WebViewWindow {
@@ -60,8 +61,11 @@ private:
     void HandleGoalTargetChange(double amount);
     void HandleGoalSelect(const std::wstring& id);
     void HandleGoalCreate(const std::wstring& name, double target);
+    void HandleGoalRename(const std::wstring& id, const std::wstring& name);
     void HandleGoalDelete(const std::wstring& id);
     void HandleGoalArchive(const std::wstring& id);
+    void HandleCloseRequest();
+    void HandleCloseBehaviorSelection(const std::wstring& action, bool remember);
     void HandleThemeSelection(const std::wstring& filename);
     void HandleCurrencySelection(const std::wstring& code);
     void HandleRefreshRates();
@@ -98,6 +102,7 @@ private:
     std::shared_ptr<RatesFetchState> ratesFetchState_;
     GoalManager goalManager_;
     CurrencyRates currencyRates_;
+    CloseBehaviorSettings closeBehaviorSettings_;
     std::vector<std::wstring> themes_;
     std::wstring selectedTheme_ = L"default";
     std::wstring selectedCurrency_ = L"USD";
@@ -107,4 +112,5 @@ private:
     bool ratesRefreshing_ = false;
     bool pageReady_ = false;
     bool fallbackRequested_ = false;
+    bool closePromptOpen_ = false;
 };

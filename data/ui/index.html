@@ -7,8 +7,10 @@
     <title>Savings Jar</title>
     <link id="theme-stylesheet" rel="stylesheet" href="/Theme/default/default.css">
     <link rel="stylesheet" href="goal-management.css">
+    <link rel="stylesheet" href="close-behavior.css">
     <script src="wave-view.js" defer></script>
     <script src="goal-management.js" defer></script>
+    <script src="close-behavior.js" defer></script>
     <script src="app.js" defer></script>
 </head>
 <body>
@@ -35,8 +37,7 @@
         <main>
             <div class="goal-selector" aria-label="Manage savings jars">
                 <select id="goal-select" class="goal-select" aria-label="Choose a savings jar"></select>
-                <button id="archive-goal-button" class="goal-action-button" type="button" title="Archive completed jar" aria-label="Archive completed jar">&#10003;</button>
-                <button id="delete-goal-button" class="goal-action-button goal-delete-button" type="button" title="Delete jar" aria-label="Delete jar">X</button>
+                <button id="delete-goal-button" class="goal-delete-button" type="button" title="Delete selected jar" aria-label="Delete selected jar">X</button>
                 <button id="create-goal-button" class="goal-pill goal-pill-add" type="button">+ New jar</button>
                 <button id="show-archived-button" class="archived-jars-button" type="button">Archived jars</button>
             </div>
@@ -55,8 +56,16 @@
                 </div>
 
                 <div class="account-panel">
-                    <p class="eyebrow">SAVINGS GOAL</p>
-                    <h2 id="goal-title">Savings Goal</h2>
+                    <div class="account-heading">
+                        <div>
+                            <p class="eyebrow">SAVINGS GOAL</p>
+                            <div class="goal-title-row">
+                                <h2 id="goal-title">Savings Goal</h2>
+                                <button id="rename-goal-button" class="goal-title-edit" type="button">Edit</button>
+                            </div>
+                        </div>
+                        <button id="completed-goal-button" class="completed-goal-button" type="button" hidden>Archive or delete</button>
+                    </div>
 
                     <div class="balance-block">
                         <div class="remaining-line">
@@ -141,8 +150,8 @@
             <form id="create-goal-form">
                 <p class="eyebrow">NEW SAVINGS JAR</p>
                 <h2 id="create-goal-title">Create a jar</h2>
-                <label for="create-goal-name">Jar name</label>
-                <input id="create-goal-name" name="name" type="text" maxlength="60" required>
+                <label for="create-goal-name">Jar name <span class="input-hint">(MAX 30 characters)</span></label>
+                <input id="create-goal-name" name="name" type="text" maxlength="30" required>
                 <label for="create-goal-target" id="create-goal-target-label">Target amount</label>
                 <input id="create-goal-target" name="target" type="number" min="0.01" max="1000000" step="0.01" inputmode="decimal" required>
                 <p id="create-goal-error" class="goal-error" role="status" aria-live="polite"></p>
@@ -160,6 +169,46 @@
                 <p id="archived-goals-empty" class="archived-goals-empty">No archived jars yet.</p>
                 <div class="dialog-actions">
                     <button id="close-archived-button" class="primary-button" type="button">Close</button>
+                </div>
+            </div>
+        </dialog>
+        <dialog id="completed-goal-dialog" class="goal-dialog completed-goal-dialog" aria-labelledby="completed-goal-title">
+            <div class="completed-goal-content">
+                <p class="eyebrow">GOAL REACHED</p>
+                <h2 id="completed-goal-title">Jar completed</h2>
+                <p>Do you want to archive, delete or keep this jar?</p>
+                <div class="completion-actions">
+                    <button id="keep-completed-goal" class="preset-button" type="button">Keep</button>
+                    <button id="delete-completed-goal" class="completion-delete-button" type="button">Delete</button>
+                    <button id="archive-completed-goal" class="primary-button" type="button">Archive</button>
+                </div>
+            </div>
+        </dialog>
+        <dialog id="rename-goal-dialog" class="goal-dialog" aria-labelledby="rename-goal-title">
+            <form id="rename-goal-form">
+                <p class="eyebrow">JAR NAME</p>
+                <h2 id="rename-goal-title">Rename jar</h2>
+                <label for="rename-goal-name">New name</label>
+                <input id="rename-goal-name" name="name" type="text" maxlength="30" required>
+                <p id="rename-goal-error" class="goal-error" role="status" aria-live="polite"></p>
+                <div class="dialog-actions">
+                    <button id="cancel-rename-goal" class="preset-button" type="button">Cancel</button>
+                    <button class="primary-button" type="submit">Save name</button>
+                </div>
+            </form>
+        </dialog>
+        <dialog id="close-behavior-dialog" class="goal-dialog close-behavior-dialog" aria-labelledby="close-behavior-title">
+            <div class="close-behavior-content">
+                <p class="eyebrow">WINDOW BEHAVIOR</p>
+                <h2 id="close-behavior-title">How do you want the app to behave when pressing X?</h2>
+                <p>Choose what the app should do when you close its window.</p>
+                <label class="remember-close-choice">
+                    <input id="remember-close-choice" type="checkbox">
+                    <span>Do not ask again after this selection</span>
+                </label>
+                <div class="close-behavior-actions">
+                    <button id="close-app-button" class="close-app-button" type="button">Close</button>
+                    <button id="minimize-app-button" class="primary-button" type="button">Minimise to taskbar</button>
                 </div>
             </div>
         </dialog>
