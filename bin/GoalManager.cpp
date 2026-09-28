@@ -1,4 +1,5 @@
 #include "GoalManager.h"
+#include "AppPaths.h"
 
 #include <algorithm>
 #include <chrono>
@@ -13,18 +14,9 @@
 namespace {
 namespace fs = std::filesystem;
 
-fs::path GetWorkspaceRoot() {
-    wchar_t exePath[MAX_PATH]{};
-    const DWORD length = GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-    if (length == 0 || length >= MAX_PATH) {
-        return {};
-    }
-    return fs::path(exePath).parent_path().parent_path().parent_path();
-}
-
 fs::path GetGoalsRoot() {
-    const auto root = GetWorkspaceRoot();
-    return root.empty() ? fs::path{} : root / L"current" / L"goals";
+    const auto dataDirectory = AppPaths::DataDirectory();
+    return dataDirectory.empty() ? fs::path{} : dataDirectory / L"goals";
 }
 
 fs::path GetGoalDirectory(const std::wstring& id) {
@@ -140,6 +132,12 @@ bool GoalManager::Load() {
     }
     if (!LoadArchivedIndex()) {
         return false;
+    }
+    if (goals_.empty()) {
+        activeId_.clear();
+        activeName_.clear();
+        activeTargetRonCents_ = 0;
+        return true;
     }
     return LoadActiveGoalData(activeId_);
 }
@@ -352,72 +350,12 @@ bool GoalManager::EnsureMigrated() {
         return false;
     }
 
-    const auto workspaceRoot = GetWorkspaceRoot();
-
-    int legacySavedCents = 0;
-    const auto legacyBinaryPath = workspaceRoot / L"current" / L"savings.dat";
-    std::uint32_t legacyValue = 0;
-    std::error_code legacyError;
-    if (fs::exists(legacyBinaryPath, legacyError) && !legacyError &&
-        ReadUint32(legacyBinaryPath, legacyValue) &&
-        legacyValue <= static_cast<std::uint32_t>(SavingsData::kMaximumSavedCents)) {
-        legacySavedCents = static_cast<int>(legacyValue);
-    } else {
-        const auto legacyTextPath = workspaceRoot / L"Data" / L"savings.txt";
-        std::ifstream legacyTextFile(legacyTextPath);
-        long long legacyTextValue = 0;
-        if (legacyTextFile && (legacyTextFile >> legacyTextValue) &&
-            legacyTextValue >= 0 &&
-            legacyTextValue <= SavingsData::kMaximumSavedCents) {
-            legacySavedCents = static_cast<int>(legacyTextValue);
-        }
-    }
-
-    int legacyTargetRonCents = 0;
-    const auto legacyGoalPath = workspaceRoot / L"current" / L"goal.dat";
-    std::error_code goalSizeError;
-    const auto legacyGoalSize = fs::file_size(legacyGoalPath, goalSizeError);
-    if (!goalSizeError && legacyGoalSize >= 8) {
-        std::ifstream legacyGoalFile(legacyGoalPath, std::ios::binary);
-        unsigned char bytes[8]{};
-        legacyGoalFile.read(reinterpret_cast<char*>(bytes), sizeof(bytes));
-        if (legacyGoalFile) {
-            const std::uint32_t ronCents =
-                static_cast<std::uint32_t>(bytes[4]) |
-                (static_cast<std::uint32_t>(bytes[5]) << 8) |
-                (static_cast<std::uint32_t>(bytes[6]) << 16) |
-                (static_cast<std::uint32_t>(bytes[7]) << 24);
-            if (ronCents > 0 &&
-                ronCents <= static_cast<std::uint32_t>(SavingsData::kMaximumSavedCents)) {
-                legacyTargetRonCents = static_cast<int>(ronCents);
-            }
-        }
-    }
-
-    constexpr wchar_t kDefaultId[] = L"default";
-    const auto defaultDirectory = goalsRoot / kDefaultId;
-    fs::create_directories(defaultDirectory, error);
+    fs::create_directories(goalsRoot, error);
     if (error) {
         return false;
     }
-
-    SavingsData savings;
-    if (!savings.Load(defaultDirectory)) {
-        return false;
-    }
-    if (legacySavedCents > 0 && savings.AddDeposit(legacySavedCents / 100.0) !=
-        DepositResult::Added) {
-        return false;
-    }
-
-    if (legacyTargetRonCents > 0 &&
-        !WriteUint32(defaultDirectory / L"goal.dat",
-                     static_cast<std::uint32_t>(legacyTargetRonCents))) {
-        return false;
-    }
-
-    goals_ = {{kDefaultId, L"Savings Goal"}};
-    activeId_ = kDefaultId;
+    goals_.clear();
+    activeId_.clear();
     return SaveIndex();
 }
 
@@ -453,8 +391,10 @@ bool GoalManager::LoadIndex() {
         }
     }
 
-    if (goals_.empty() ||
-        std::none_of(goals_.begin(), goals_.end(),
+    if (goals_.empty()) {
+        return activeId_.empty();
+    }
+    if (std::none_of(goals_.begin(), goals_.end(),
                      [this](const GoalInfo& goal) { return goal.id == activeId_; })) {
         return false;
     }

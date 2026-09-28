@@ -1,4 +1,5 @@
 #include "GoalManager.h"
+#include "AppPaths.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -11,13 +12,8 @@ namespace {
 namespace fs = std::filesystem;
 
 fs::path GetGoalsRoot() {
-    wchar_t executablePath[MAX_PATH]{};
-    const DWORD length = GetModuleFileNameW(nullptr, executablePath, MAX_PATH);
-    if (length == 0 || length >= MAX_PATH) {
-        return {};
-    }
-    return fs::path(executablePath).parent_path().parent_path().parent_path() /
-        L"current" / L"goals";
+    const auto dataDirectory = AppPaths::DataDirectory();
+    return dataDirectory.empty() ? fs::path{} : dataDirectory / L"goals";
 }
 
 fs::path GetArchivedRoot() {

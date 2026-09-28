@@ -16,6 +16,7 @@
 #include "../bin/CurrencyRates.h"
 #include "../bin/CloseBehaviorSettings.h"
 #include "../bin/GoalManager.h"
+#include "../bin/StartupSettings.h"
 
 class WebViewWindow {
 public:
@@ -66,6 +67,7 @@ private:
     void HandleGoalArchive(const std::wstring& id);
     void HandleCloseRequest();
     void HandleCloseBehaviorSelection(const std::wstring& action, bool remember);
+    void HandleStartupChoice(bool enabled);
     void HandleThemeSelection(const std::wstring& filename);
     void HandleCurrencySelection(const std::wstring& code);
     void HandleRefreshRates();
@@ -103,6 +105,7 @@ private:
     GoalManager goalManager_;
     CurrencyRates currencyRates_;
     CloseBehaviorSettings closeBehaviorSettings_;
+    StartupSettings startupSettings_;
     std::vector<std::wstring> themes_;
     std::wstring selectedTheme_ = L"default";
     std::wstring selectedCurrency_ = L"USD";

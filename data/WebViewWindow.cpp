@@ -18,6 +18,7 @@
 
 #include <dwmapi.h>
 
+#include "../bin/AppPaths.h"
 #include "Resource.h"
 
 #pragma comment(lib, "Ole32.lib")
@@ -56,24 +57,6 @@ public:
     WinRtApartment(const WinRtApartment&) = delete;
     WinRtApartment& operator=(const WinRtApartment&) = delete;
 };
-
-std::filesystem::path GetExecutablePath() {
-    wchar_t executablePath[MAX_PATH]{};
-    const DWORD length = GetModuleFileNameW(
-        nullptr, executablePath, static_cast<DWORD>(std::size(executablePath)));
-    if (length == 0 || length >= std::size(executablePath)) {
-        return {};
-    }
-    return std::filesystem::path(executablePath);
-}
-
-std::filesystem::path GetWorkspaceRoot() {
-    const auto executablePath = GetExecutablePath();
-    if (executablePath.empty()) {
-        return {};
-    }
-    return executablePath.parent_path().parent_path().parent_path();
-}
 
 std::wstring EscapeJson(const std::wstring& value) {
     std::wstring escaped;
@@ -156,6 +139,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         LoadSelectedTheme();
         LoadSelectedCurrency();
         closeBehaviorSettings_.Load();
+        startupSettings_.Load();
 
         WNDCLASSEXW windowClass{};
         windowClass.cbSize = sizeof(windowClass);
@@ -363,13 +347,13 @@ void WebViewWindow::ApplyModernTitleBar() {
 }
 
 void WebViewWindow::CreateWebView() {
-    const auto workspaceRoot = GetWorkspaceRoot();
-    if (workspaceRoot.empty()) {
+    const auto dataDirectory = AppPaths::DataDirectory();
+    if (dataDirectory.empty()) {
         RequestFallback();
         return;
     }
 
-    const auto userDataPath = workspaceRoot / L"current" / L"webview2-profile";
+    const auto userDataPath = dataDirectory / L"webview2-profile";
     std::error_code error;
     std::filesystem::create_directories(userDataPath, error);
     if (error) {
@@ -441,11 +425,11 @@ void WebViewWindow::HandleControllerCreated(
         settings->put_IsZoomControlEnabled(FALSE);
     }
 
-    const auto workspaceRoot = GetWorkspaceRoot();
+    const auto assetDirectory = AppPaths::ExecutableDirectory();
     ComPtr<ICoreWebView2_3> webView3;
-    if (workspaceRoot.empty() || FAILED(webView_.As(&webView3)) ||
+    if (assetDirectory.empty() || FAILED(webView_.As(&webView3)) ||
         FAILED(webView3->SetVirtualHostNameToFolderMapping(
-            kVirtualHost, workspaceRoot.c_str(),
+            kVirtualHost, assetDirectory.c_str(),
             COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_DENY_CORS))) {
         RequestFallback();
         return;
@@ -498,7 +482,7 @@ void WebViewWindow::HandleControllerCreated(
     ResizeWebView();
     controller_->put_IsVisible(TRUE);
     const std::wstring url =
-        std::wstring(L"https://") + kVirtualHost + L"/data/ui/index.html";
+        std::wstring(L"https://") + kVirtualHost + L"/ui/index.html";
     if (FAILED(webView_->Navigate(url.c_str()))) {
         RequestFallback();
     }
@@ -547,6 +531,8 @@ void WebViewWindow::HandleWebMessage(
             HandleCloseBehaviorSelection(
                 std::wstring(message.GetNamedString(L"action")),
                 message.GetNamedBoolean(L"remember", false));
+        } else if (type == L"startupChoice") {
+            HandleStartupChoice(message.GetNamedBoolean(L"enabled", false));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -852,6 +838,16 @@ void WebViewWindow::HandleCloseBehaviorSelection(
     }
 }
 
+void WebViewWindow::HandleStartupChoice(bool enabled) {
+    if (!startupSettings_.ApplyChoice(enabled)) {
+        SendState(L"Could not save the Windows startup preference.");
+        return;
+    }
+    SendState(enabled
+        ? L"Savings Jar will start with Windows."
+        : L"Windows startup was left disabled.");
+}
+
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
     if (std::find(themes_.begin(), themes_.end(), filename) == themes_.end()) {
         return;
@@ -949,6 +945,8 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << (ratesAvailable_ ? L"true" : L"false")
          << L",\"ratesLoading\":" << (ratesLoading_ ? L"true" : L"false")
          << L",\"ratesRefreshing\":" << (ratesRefreshing_ ? L"true" : L"false")
+         << L",\"startupChoiceRequired\":"
+         << (!startupSettings_.IsAnswered() ? L"true" : L"false")
          << L",\"balanceRon\":" << balanceDisplay.value_or(0.0)
          << L",\"goalRon\":" << goalDisplay.value_or(0.0)
          << L",\"remainingRon\":" << remainingDisplay.value_or(0.0)
@@ -1048,13 +1046,13 @@ void WebViewWindow::ResizeWebView() {
 
 std::vector<std::wstring> WebViewWindow::FindThemes() const {
     std::vector<std::wstring> themes;
-    const auto workspaceRoot = GetWorkspaceRoot();
-    if (workspaceRoot.empty()) {
+    const auto assetDirectory = AppPaths::ExecutableDirectory();
+    if (assetDirectory.empty()) {
         return themes;
     }
 
     std::error_code error;
-    const auto themeDirectory = workspaceRoot / L"Theme";
+    const auto themeDirectory = assetDirectory / L"Theme";
     for (std::filesystem::directory_iterator iterator(themeDirectory, error), end;
          !error && iterator != end; iterator.increment(error)) {
         if (!iterator->is_directory(error) || error) {
@@ -1077,12 +1075,12 @@ std::vector<std::wstring> WebViewWindow::FindThemes() const {
 
 void WebViewWindow::LoadSelectedTheme() {
     selectedTheme_ = L"default";
-    const auto workspaceRoot = GetWorkspaceRoot();
-    if (workspaceRoot.empty()) {
+    const auto dataDirectory = AppPaths::DataDirectory();
+    if (dataDirectory.empty()) {
         return;
     }
 
-    std::ifstream file(workspaceRoot / L"current" / L"theme.txt");
+    std::ifstream file(dataDirectory / L"theme.txt");
     std::string selected;
     if (!file || !std::getline(file, selected)) {
         return;
@@ -1095,19 +1093,12 @@ void WebViewWindow::LoadSelectedTheme() {
 }
 
 void WebViewWindow::SaveSelectedTheme() const {
-    const auto workspaceRoot = GetWorkspaceRoot();
-    if (workspaceRoot.empty()) {
+    const auto dataDirectory = AppPaths::DataDirectory();
+    if (dataDirectory.empty()) {
         return;
     }
 
-    std::error_code error;
-    const auto currentDirectory = workspaceRoot / L"current";
-    std::filesystem::create_directories(currentDirectory, error);
-    if (error) {
-        return;
-    }
-
-    std::ofstream file(currentDirectory / L"theme.txt", std::ios::trunc);
+    std::ofstream file(dataDirectory / L"theme.txt", std::ios::trunc);
     if (file) {
         std::string filename;
         filename.reserve(selectedTheme_.size());
@@ -1120,12 +1111,12 @@ void WebViewWindow::SaveSelectedTheme() const {
 
 void WebViewWindow::LoadSelectedCurrency() {
     selectedCurrency_ = L"USD";
-    const auto workspaceRoot = GetWorkspaceRoot();
-    if (workspaceRoot.empty()) {
+    const auto dataDirectory = AppPaths::DataDirectory();
+    if (dataDirectory.empty()) {
         return;
     }
 
-    std::ifstream file(workspaceRoot / L"current" / L"currency.txt");
+    std::ifstream file(dataDirectory / L"currency.txt");
     std::string selected;
     if (!file || !std::getline(file, selected)) {
         return;
@@ -1142,19 +1133,12 @@ void WebViewWindow::LoadSelectedCurrency() {
 }
 
 void WebViewWindow::SaveSelectedCurrency() const {
-    const auto workspaceRoot = GetWorkspaceRoot();
-    if (workspaceRoot.empty()) {
+    const auto dataDirectory = AppPaths::DataDirectory();
+    if (dataDirectory.empty()) {
         return;
     }
 
-    std::error_code error;
-    const auto currentDirectory = workspaceRoot / L"current";
-    std::filesystem::create_directories(currentDirectory, error);
-    if (error) {
-        return;
-    }
-
-    std::ofstream file(currentDirectory / L"currency.txt", std::ios::trunc);
+    std::ofstream file(dataDirectory / L"currency.txt", std::ios::trunc);
     if (file) {
         file << NarrowAscii(selectedCurrency_) << '\n';
     }

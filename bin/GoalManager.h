@@ -19,14 +19,13 @@ struct GoalHistoryEntry {
 
 // Owns the list of savings goals ("jars"), the currently active goal, and
 // the balance/target/history for that active goal. Every goal is backed by
-// its own directory under current/goals/<id>/ containing:
+// its own directory under %APPDATA%/PauCode/Savings Jar/goals/<id>/ containing:
 //   savings.dat  - 4-byte balance in RON cents (SavingsData format)
 //   goal.dat     - 4-byte target in RON cents
 //   history.log  - append-only "<millis>|<type>|<ronCents>" text lines
-// current/goals/index.txt tracks the active goal id and the goal list.
-// On first run this migrates any pre-existing single-goal data
-// (current/savings.dat, current/goal.dat, Data/savings.txt) into a
-// "default" goal.
+// The goals/index.txt file tracks the active goal id and the goal list.
+// A first run creates an empty index; the UI then asks the user to create
+// their first jar.
 class GoalManager {
 public:
     bool Load();

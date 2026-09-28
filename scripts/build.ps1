@@ -21,8 +21,15 @@ New-Item -ItemType Directory -Path $iterationPath | Out-Null
 Push-Location $workspaceRoot
 try {
     $relativeOutputPath = "prototypes\$iterationName"
+    $relativeIntermediatePath = "$relativeOutputPath\build"
+    $relativeRuntimePath = "$relativeOutputPath\Savings Jar"
+    $intermediatePath = Join-Path $workspaceRoot $relativeIntermediatePath
+    $runtimePath = Join-Path $workspaceRoot $relativeRuntimePath
+    New-Item -ItemType Directory -Path $intermediatePath -Force | Out-Null
+    New-Item -ItemType Directory -Path $runtimePath -Force | Out-Null
+
     $webViewNativePath = & (Join-Path $PSScriptRoot 'restore-webview2.ps1')
-    $resourcePath = Join-Path $relativeOutputPath 'AppResources.res'
+    $resourcePath = Join-Path $relativeIntermediatePath 'AppResources.res'
     $rcArguments = @(
         '/nologo',
         ('/fo' + $resourcePath),
@@ -35,9 +42,9 @@ try {
         '/nologo',
         '/std:c++17',
         ('/I' + (Join-Path $webViewNativePath 'include')),
-        ('/Fo' + $relativeOutputPath + '\'),
-        ('/Fd' + $relativeOutputPath + '\MoneySavingWidgetCompiler.pdb'),
-        ('/Fe' + $relativeOutputPath + '\MoneySavingWidget.exe'),
+        ('/Fo' + $relativeIntermediatePath + '\'),
+        ('/Fd' + $relativeIntermediatePath + '\MoneySavingWidgetCompiler.pdb'),
+        ('/Fe' + $relativeRuntimePath + '\MoneySavingWidget.exe'),
         'data\MoneySavingWidgetPrototype.cpp',
         'data\MoneySaverWindow.cpp',
         'data\WebViewWindow.cpp',
@@ -47,16 +54,21 @@ try {
         'bin\SavingsData.cpp',
         'bin\GoalManager.cpp',
         'bin\GoalLifecycle.cpp',
+        'bin\AppPaths.cpp',
         'bin\CloseBehaviorSettings.cpp',
+        'bin\StartupSettings.cpp',
         'bin\CurrencyRates.cpp',
         '/link',
         ('/LIBPATH:' + (Join-Path $webViewNativePath 'x64')),
+        ('/PDB:' + $relativeIntermediatePath + '\MoneySavingWidget.pdb'),
+        '/INCREMENTAL:NO',
         $resourcePath,
         'User32.lib',
         'Gdi32.lib',
         'Ole32.lib',
         'Shell32.lib',
         'Dwmapi.lib',
+        'Advapi32.lib',
         'version.lib',
         'Winhttp.lib',
         'WebView2LoaderStatic.lib',
@@ -85,8 +97,20 @@ try {
     $compilerOutput | Tee-Object -FilePath $logPath -Append
 
     if ($buildExitCode -eq 0) {
+        $uiPath = Join-Path $runtimePath 'ui'
+        $themePath = Join-Path $runtimePath 'Theme'
+        New-Item -ItemType Directory -Path $uiPath -Force | Out-Null
+        New-Item -ItemType Directory -Path $themePath -Force | Out-Null
+        Copy-Item -Path (Join-Path $workspaceRoot 'data\ui\*') -Destination $uiPath -Recurse -Force
+        Copy-Item -Path (Join-Path $workspaceRoot 'Theme\*') -Destination $themePath -Recurse -Force
+        Remove-Item -LiteralPath (Join-Path $themePath 'README.md') -ErrorAction SilentlyContinue
+
+        $packagePath = Join-Path $iterationPath 'SavingsJar-Windows-x64.zip'
+        Compress-Archive -Path (Join-Path $runtimePath '*') -DestinationPath $packagePath -Force
+
         'Build succeeded.' | Add-Content -LiteralPath $logPath
-        Write-Output "Build succeeded: $iterationPath"
+        Write-Output "Build succeeded: $runtimePath"
+        Write-Output "Shareable package: $packagePath"
     }
     else {
         "Build failed with exit code $buildExitCode." |

@@ -1,21 +1,16 @@
 #include "CloseBehaviorSettings.h"
+#include "AppPaths.h"
 
 #include <filesystem>
 #include <fstream>
 #include <system_error>
 
-#include <windows.h>
-
 namespace {
 std::filesystem::path GetSettingsPath() {
-    wchar_t executablePath[MAX_PATH]{};
-    const DWORD length = GetModuleFileNameW(nullptr, executablePath, MAX_PATH);
-    if (length == 0 || length >= MAX_PATH) {
-        return {};
-    }
-    const auto workspaceRoot =
-        std::filesystem::path(executablePath).parent_path().parent_path().parent_path();
-    return workspaceRoot / L"current" / L"close-behavior.txt";
+    const auto dataDirectory = AppPaths::DataDirectory();
+    return dataDirectory.empty()
+        ? std::filesystem::path{}
+        : dataDirectory / L"close-behavior.txt";
 }
 } // namespace
 

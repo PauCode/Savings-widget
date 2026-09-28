@@ -11,7 +11,11 @@ Add a theme folder to [Theme/](Theme/README.md). The app discovers themes at sta
 
 ## Build and fallback
 
-Run the default VS Code build task. The first build restores the pinned WebView2 SDK into an ignored local package cache. The WebView2 Runtime must be installed to use the web UI; if WebView2 initialization, page loading, or its browser process fails, the existing native UI starts instead.
+Run the default VS Code build task. Each build creates a portable runtime folder at `prototypes/iteration-N/Savings Jar/` and a ready-to-share `SavingsJar-Windows-x64.zip` beside it. The package contains only the executable, WebView UI, and themes; compiler artifacts remain under `iteration-N/build/`.
+
+Writable data is stored in `%APPDATA%\PauCode\Savings Jar`, including goals, preferences, and the WebView2 profile. A first run starts with no jars and opens the Create jar dialog; repository data under `current/` is never imported. The WebView2 Runtime must be installed to use the web UI; if WebView2 initialization, page loading, or its browser process fails, the native UI starts instead.
+
+Before the first jar is created, the app asks whether it should start with Windows. Choosing Yes adds a per-user `PauCode Savings Jar` entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; choosing No leaves startup disabled. The answer is stored in `%APPDATA%\PauCode\Savings Jar\start-with-windows.txt` so the question is only asked once.
 
 ## Development log
 

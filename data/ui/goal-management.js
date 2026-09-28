@@ -15,6 +15,7 @@
     const createFromCompletedButton = document.querySelector("#create-from-completed-goal");
     const completedGoalMessage = document.querySelector("#completed-goal-message");
     const createGoalButton = document.querySelector("#create-goal-button");
+    const createGoalDialog = document.querySelector("#create-goal-dialog");
     const showArchivedButton = document.querySelector("#show-archived-button");
     const archivedDialog = document.querySelector("#archived-goals-dialog");
     const archivedList = document.querySelector("#archived-goals-list");
@@ -26,6 +27,7 @@
     let hasAlternativeGoal = false;
     let completionWarningActive = false;
     let completionWarningTimer = 0;
+    let firstJarPromptShown = false;
 
     const completionPrompt = "Do you want to archive, delete or keep this jar?";
     const noOtherJarsMessage = "Cannot delete/archive jar as there aren't any other jars remaining. Please create another jar and try again.";
@@ -148,12 +150,18 @@
             activeGoalId: selectedId,
             archivedGoals,
             canArchiveActiveGoal,
-            isActiveGoalComplete
+            isActiveGoalComplete,
+            startupChoiceRequired
         }) {
             activeGoalId = selectedId;
             activeGoalName = goals.find((goal) => goal.id === selectedId)?.name || "";
 
             goalSelect.replaceChildren();
+            if (goals.length === 0) {
+                const emptyOption = document.createElement("option");
+                emptyOption.textContent = "No jars yet";
+                goalSelect.append(emptyOption);
+            }
             goals.forEach((goal) => {
                 const option = document.createElement("option");
                 option.value = goal.id;
@@ -161,6 +169,8 @@
                 goalSelect.append(option);
             });
             goalSelect.value = selectedId;
+            goalSelect.disabled = goals.length === 0;
+            renameGoalButton.disabled = goals.length === 0;
 
             hasAlternativeGoal = goals.length > 1;
             deleteGoalButton.disabled = !hasAlternativeGoal;
@@ -170,6 +180,12 @@
             deleteCompletedButton.classList.toggle("is-unavailable", !hasAlternativeGoal);
             deleteCompletedButton.setAttribute("aria-disabled", String(!hasAlternativeGoal));
             renderArchivedGoals(archivedGoals);
+
+            if (goals.length === 0 && !startupChoiceRequired &&
+                !firstJarPromptShown && !createGoalDialog.open) {
+                firstJarPromptShown = true;
+                createGoalButton.click();
+            }
         }
     };
 })();

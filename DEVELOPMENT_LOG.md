@@ -68,6 +68,11 @@
 - Limited Recent activity to five visible fixed-height entries with themed scrolling for older entries. Added visible pressed feedback to enabled buttons and a smooth sliding indicator between Add and Remove, with reduced-motion support.
 - Added isolated close behavior settings in `bin/CloseBehaviorSettings.h/.cpp` and `data/ui/close-behavior.js/.css`. Pressing X asks whether to Close or Minimise to taskbar; an optional Do not ask again toggle persists the selection in `current/close-behavior.txt`.
 - Validation: MSVC builds succeeded through iteration 79, with frontend and C++ diagnostics clear after the final changes.
+- Added shared runtime path handling in `bin/AppPaths.h/.cpp`. Writable goals, preferences, and WebView2 profile data now live under `%APPDATA%\PauCode\Savings Jar`; repository data under `current/` is not imported.
+- Reworked `scripts/build.ps1` to produce `iteration-N/Savings Jar/` containing only the executable, `ui/`, and `Theme/`, plus a ready-to-share `SavingsJar-Windows-x64.zip`. Compiler objects and symbols stay in `iteration-N/build/`.
+- Validation: iteration 82 built successfully; its ZIP contained only runtime files, launched successfully after extraction to `%TEMP%`, and created the AppData storage directory.
+- Fixed clean first-run behavior: when the AppData folder is absent, the app now creates an empty goal index and opens Create jar instead of restoring repository data or creating a default jar. Validation: iteration 84 built successfully; a temporary clean-AppData launch created zero goal directories, and the original AppData folder was restored after the test.
+- Added a first-run Start with Windows choice before Create jar. `bin/StartupSettings.h/.cpp` persists Yes/No in AppData and manages the per-user `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` entry without elevation; isolated `startup-settings.js/.css` provide the required-choice dialog. Validation: iteration 85 built successfully and the portable ZIP includes the startup UI assets.
 
 
 

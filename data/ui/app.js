@@ -32,6 +32,7 @@ const createGoalName = document.querySelector("#create-goal-name");
 const createGoalTarget = document.querySelector("#create-goal-target");
 const createGoalError = document.querySelector("#create-goal-error");
 const cancelCreateGoalButton = document.querySelector("#cancel-create-goal");
+const submitCreateGoalButton = document.querySelector("#submit-create-goal");
 const historyList = document.querySelector("#history-list");
 const historyEmpty = document.querySelector("#history-empty");
 const currencySelect = document.querySelector("#currency-select");
@@ -160,12 +161,14 @@ function renderState(state) {
             activeGoalId: state.activeGoalId,
             archivedGoals: state.archivedGoals || [],
             canArchiveActiveGoal: Boolean(state.canArchiveActiveGoal),
-            isActiveGoalComplete: Boolean(state.isActiveGoalComplete)
+            isActiveGoalComplete: Boolean(state.isActiveGoalComplete),
+            startupChoiceRequired: Boolean(state.startupChoiceRequired)
         });
     }
-    if (state.activeGoalName) {
-        goalTitle.textContent = state.activeGoalName;
-    }
+    const hasActiveGoal = Boolean(state.activeGoalId);
+    goalTitle.textContent = hasActiveGoal
+        ? state.activeGoalName
+        : "Create your first jar";
 
     if (state.currencies?.length) {
         setCurrencyOptions(state.currencies, state.currency);
@@ -185,8 +188,12 @@ function renderState(state) {
     refreshRatesButton.disabled = Boolean(state.ratesRefreshing);
     refreshRatesButton.classList.toggle("is-spinning", Boolean(state.ratesRefreshing));
 
-    setDepositEnabled(state.ratesAvailable);
-    editGoalButton.disabled = false;
+    setDepositEnabled(state.ratesAvailable && hasActiveGoal);
+    editGoalButton.disabled = !hasActiveGoal;
+    resetButton.disabled = !hasActiveGoal;
+    addModeButton.disabled = !hasActiveGoal;
+    removeModeButton.disabled = !hasActiveGoal;
+    submitCreateGoalButton.disabled = !state.ratesAvailable;
     rateDate.textContent = state.ratesAvailable
         ? `Rates · ${state.rateDate}`
         : state.ratesLoading ? "Rates loading" : "Rates unavailable";
@@ -195,6 +202,19 @@ function renderState(state) {
     progressLabel.textContent = `${Math.round(percent)}%`;
     const progressRatio = state.progressRatio ?? percent;
     waveView.setProgress(progressRatio);
+
+    if (!hasActiveGoal) {
+        balanceValue.textContent = "--.--";
+        remainingValue.textContent = "--.--";
+        goalValue.textContent = "--.--";
+        statusMessage.textContent = "Create a jar to start saving.";
+        if (createGoalDialog.open) {
+            createGoalError.textContent = state.ratesAvailable
+                ? ""
+                : "Waiting for exchange rates...";
+        }
+        return;
+    }
 
     if (!state.ratesAvailable) {
         balanceValue.textContent = "--.--";

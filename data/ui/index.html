@@ -8,7 +8,9 @@
     <link id="theme-stylesheet" rel="stylesheet" href="/Theme/default/default.css">
     <link rel="stylesheet" href="goal-management.css">
     <link rel="stylesheet" href="close-behavior.css">
+    <link rel="stylesheet" href="startup-settings.css">
     <script src="wave-view.js" defer></script>
+    <script src="startup-settings.js" defer></script>
     <script src="goal-management.js" defer></script>
     <script src="close-behavior.js" defer></script>
     <script src="app.js" defer></script>
@@ -157,7 +159,7 @@
                 <p id="create-goal-error" class="goal-error" role="status" aria-live="polite"></p>
                 <div class="dialog-actions">
                     <button id="cancel-create-goal" class="preset-button" type="button">Cancel</button>
-                    <button class="primary-button" type="submit">Create jar</button>
+                    <button id="submit-create-goal" class="primary-button" type="submit">Create jar</button>
                 </div>
             </form>
         </dialog>
@@ -210,6 +212,17 @@
                 <div class="close-behavior-actions">
                     <button id="close-app-button" class="close-app-button" type="button">Close</button>
                     <button id="minimize-app-button" class="primary-button" type="button">Minimise to taskbar</button>
+                </div>
+            </div>
+        </dialog>
+        <dialog id="startup-settings-dialog" class="goal-dialog startup-settings-dialog" aria-labelledby="startup-settings-title">
+            <div class="startup-settings-content">
+                <p class="eyebrow">WINDOWS STARTUP</p>
+                <h2 id="startup-settings-title">Start Savings Jar with Windows?</h2>
+                <p>You can choose whether the app opens automatically after you sign in.</p>
+                <div class="startup-settings-actions">
+                    <button id="disable-startup-button" class="preset-button" type="button">No</button>
+                    <button id="enable-startup-button" class="primary-button" type="button">Yes</button>
                 </div>
             </div>
         </dialog>
