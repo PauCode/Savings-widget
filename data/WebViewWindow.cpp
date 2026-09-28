@@ -16,13 +16,29 @@
 
 #include <winrt/Windows.Data.Json.h>
 
+#include <dwmapi.h>
+
 #include "Resource.h"
 
 #pragma comment(lib, "Ole32.lib")
+#pragma comment(lib, "Dwmapi.lib")
 
 namespace {
 using Microsoft::WRL::Callback;
 using Microsoft::WRL::ComPtr;
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+#ifndef DWMWA_BORDER_COLOR
+#define DWMWA_BORDER_COLOR 34
+#endif
+#ifndef DWMWA_CAPTION_COLOR
+#define DWMWA_CAPTION_COLOR 35
+#endif
+#ifndef DWMWA_TEXT_COLOR
+#define DWMWA_TEXT_COLOR 36
+#endif
 
 constexpr wchar_t kWindowClass[] = L"SavingsJarWebViewWindow";
 constexpr wchar_t kVirtualHost[] = L"savings-jar.local";
@@ -146,7 +162,7 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
         windowClass.lpfnWndProc = WindowProc;
         windowClass.lpszClassName = kWindowClass;
         windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+        windowClass.hbrBackground = CreateSolidBrush(RGB(0x08, 0x13, 0x1c));
         windowClass.hIcon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APPICON));
         windowClass.hIconSm = windowClass.hIcon;
         if (!RegisterClassExW(&windowClass) &&
@@ -166,10 +182,12 @@ bool WebViewWindow::Run(HINSTANCE instance, int showCommand, int& exitCode) {
             return false;
         }
 
+        ApplyModernTitleBar();
         StartRatesFetch();
         CreateWebView();
         ShowWindow(window_, showCommand);
         UpdateWindow(window_);
+        AddTrayIcon();
 
         MSG message{};
         int messageResult = 0;
@@ -218,6 +236,33 @@ LRESULT WebViewWindow::HandleMessage(
         ResizeWebView();
         return 0;
 
+    case WM_CLOSE:
+        ShowWindow(window_, SW_HIDE);
+        return 0;
+
+    case kTrayIconMessage:
+        switch (LOWORD(lParam)) {
+        case WM_LBUTTONUP:
+        case WM_LBUTTONDBLCLK:
+            RestoreFromTray();
+            break;
+        case WM_RBUTTONUP:
+            ShowTrayContextMenu();
+            break;
+        }
+        return 0;
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case kTrayMenuRestoreId:
+            RestoreFromTray();
+            return 0;
+        case kTrayMenuExitId:
+            DestroyWindow(window_);
+            return 0;
+        }
+        break;
+
     case kFallbackMessage:
         if (window_) {
             DestroyWindow(window_);
@@ -229,11 +274,91 @@ LRESULT WebViewWindow::HandleMessage(
         return 0;
 
     case WM_DESTROY:
+        RemoveTrayIcon();
         PostQuitMessage(0);
         return 0;
     }
 
     return DefWindowProcW(window_, message, wParam, lParam);
+}
+
+void WebViewWindow::AddTrayIcon() {
+    if (trayIconAdded_ || !window_) {
+        return;
+    }
+
+    trayIcon_.cbSize = sizeof(trayIcon_);
+    trayIcon_.hWnd = window_;
+    trayIcon_.uID = kTrayIconId;
+    trayIcon_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    trayIcon_.uCallbackMessage = kTrayIconMessage;
+    trayIcon_.hIcon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APPICON));
+    wcscpy_s(trayIcon_.szTip, L"Savings Jar");
+
+    trayIconAdded_ = Shell_NotifyIconW(NIM_ADD, &trayIcon_) != FALSE;
+}
+
+void WebViewWindow::RemoveTrayIcon() {
+    if (!trayIconAdded_) {
+        return;
+    }
+    Shell_NotifyIconW(NIM_DELETE, &trayIcon_);
+    trayIconAdded_ = false;
+}
+
+void WebViewWindow::ShowTrayContextMenu() {
+    if (!window_) {
+        return;
+    }
+
+    HMENU menu = CreatePopupMenu();
+    if (!menu) {
+        return;
+    }
+
+    AppendMenuW(menu, MF_STRING, kTrayMenuRestoreId, L"Open Savings Jar");
+    AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(menu, MF_STRING, kTrayMenuExitId, L"Exit");
+
+    POINT cursor{};
+    GetCursorPos(&cursor);
+    SetForegroundWindow(window_);
+    TrackPopupMenu(
+        menu, TPM_RIGHTBUTTON, cursor.x, cursor.y, 0, window_, nullptr);
+    PostMessageW(window_, WM_NULL, 0, 0);
+    DestroyMenu(menu);
+}
+
+void WebViewWindow::RestoreFromTray() {
+    if (!window_) {
+        return;
+    }
+    ShowWindow(window_, SW_RESTORE);
+    SetForegroundWindow(window_);
+}
+
+void WebViewWindow::ApplyModernTitleBar() {
+    if (!window_) {
+        return;
+    }
+
+    const HICON icon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APPICON));
+    SendMessageW(window_, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(icon));
+    SendMessageW(window_, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(icon));
+
+    const BOOL darkMode = TRUE;
+    DwmSetWindowAttribute(
+        window_, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+
+    constexpr COLORREF kCaptionColor = RGB(0x11, 0x1d, 0x29);
+    constexpr COLORREF kTextColor = RGB(0xef, 0xf5, 0xf2);
+    constexpr COLORREF kBorderColor = RGB(0x29, 0x38, 0x44);
+    DwmSetWindowAttribute(
+        window_, DWMWA_CAPTION_COLOR, &kCaptionColor, sizeof(kCaptionColor));
+    DwmSetWindowAttribute(
+        window_, DWMWA_TEXT_COLOR, &kTextColor, sizeof(kTextColor));
+    DwmSetWindowAttribute(
+        window_, DWMWA_BORDER_COLOR, &kBorderColor, sizeof(kBorderColor));
 }
 
 void WebViewWindow::CreateWebView() {
@@ -409,6 +534,10 @@ void WebViewWindow::HandleWebMessage(
             HandleGoalCreate(
                 std::wstring(message.GetNamedString(L"name")),
                 message.GetNamedNumber(L"target"));
+        } else if (type == L"deleteGoal") {
+            HandleGoalDelete(std::wstring(message.GetNamedString(L"id")));
+        } else if (type == L"archiveGoal") {
+            HandleGoalArchive(std::wstring(message.GetNamedString(L"id")));
         } else if (type == L"theme") {
             HandleThemeSelection(
                 std::wstring(message.GetNamedString(L"file")));
@@ -645,6 +774,24 @@ void WebViewWindow::HandleGoalCreate(const std::wstring& name, double target) {
     SendState(L"New jar created.");
 }
 
+void WebViewWindow::HandleGoalDelete(const std::wstring& id) {
+    if (!goalManager_.DeleteGoal(id)) {
+        SendState(L"Could not delete the jar. Keep at least one active jar.");
+        return;
+    }
+    MigrateLegacyBalanceIfNeeded();
+    SendState(L"Jar deleted.");
+}
+
+void WebViewWindow::HandleGoalArchive(const std::wstring& id) {
+    if (!goalManager_.ArchiveGoal(id)) {
+        SendState(L"Only completed jars can be archived, and one active jar must remain.");
+        return;
+    }
+    MigrateLegacyBalanceIfNeeded();
+    SendState(L"Completed jar archived.");
+}
+
 void WebViewWindow::HandleThemeSelection(const std::wstring& filename) {
     if (std::find(themes_.begin(), themes_.end(), filename) == themes_.end()) {
         return;
@@ -710,6 +857,12 @@ void WebViewWindow::SendState(const std::wstring& status) {
     const auto goalDisplay = (ratesAvailable_ && goalRon > 0.0)
         ? ConvertToDisplayCurrency(goalRon)
         : std::optional<double>{};
+    const double remainingRon = balanceRon
+        ? (std::max)(0.0, goalRon - *balanceRon)
+        : 0.0;
+    const auto remainingDisplay = ratesAvailable_
+        ? ConvertToDisplayCurrency(remainingRon)
+        : std::optional<double>{};
 
     if (!status.empty()) {
         status_ = status;
@@ -738,6 +891,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << L",\"ratesRefreshing\":" << (ratesRefreshing_ ? L"true" : L"false")
          << L",\"balanceRon\":" << balanceDisplay.value_or(0.0)
          << L",\"goalRon\":" << goalDisplay.value_or(0.0)
+         << L",\"remainingRon\":" << remainingDisplay.value_or(0.0)
          << L",\"progressPercent\":" << progressPercent
          << L",\"progressRatio\":" << progressRatio
          << L",\"rateDate\":\""
@@ -750,7 +904,10 @@ void WebViewWindow::SendState(const std::wstring& status) {
          << L"\",\"currency\":\"" << EscapeJson(selectedCurrency_)
          << L"\",\"activeGoalId\":\"" << EscapeJson(goalManager_.GetActiveGoalId())
          << L"\",\"activeGoalName\":\"" << EscapeJson(goalManager_.GetActiveGoalName())
-         << L"\",\"currencies\":[";
+            << L"\",\"canArchiveActiveGoal\":"
+            << ((targetRonCents > 0 && savedCents >= targetRonCents &&
+                goalManager_.GetGoals().size() > 1) ? L"true" : L"false")
+            << L",\"currencies\":[";
 
     const auto& supportedCurrencies = CurrencyRates::SupportedCurrencies();
     for (std::size_t index = 0; index < supportedCurrencies.size(); ++index) {
@@ -768,6 +925,17 @@ void WebViewWindow::SendState(const std::wstring& status) {
         }
         json << L"{\"id\":\"" << EscapeJson(goals[index].id)
              << L"\",\"name\":\"" << EscapeJson(goals[index].name) << L"\"}";
+    }
+    json << L"],\"archivedGoals\":[";
+
+    const auto& archivedGoals = goalManager_.GetArchivedGoals();
+    for (std::size_t index = 0; index < archivedGoals.size(); ++index) {
+        if (index > 0) {
+            json << L',';
+        }
+        json << L"{\"id\":\"" << EscapeJson(archivedGoals[index].id)
+             << L"\",\"name\":\"" << EscapeJson(archivedGoals[index].name)
+             << L"\"}";
     }
     json << L"],\"history\":[";
 

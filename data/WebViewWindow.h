@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <windows.h>
+#include <shellapi.h>
 #include <WebView2.h>
 #include <wrl.h>
 
@@ -39,6 +40,10 @@ private:
 
     static constexpr UINT kFallbackMessage = WM_APP + 10;
     static constexpr UINT kRatesLoadedMessage = WM_APP + 11;
+    static constexpr UINT kTrayIconMessage = WM_APP + 12;
+    static constexpr UINT kTrayIconId = 1;
+    static constexpr UINT kTrayMenuRestoreId = 1;
+    static constexpr UINT kTrayMenuExitId = 2;
 
     static LRESULT CALLBACK WindowProc(
         HWND window, UINT message, WPARAM wParam, LPARAM lParam);
@@ -55,6 +60,8 @@ private:
     void HandleGoalTargetChange(double amount);
     void HandleGoalSelect(const std::wstring& id);
     void HandleGoalCreate(const std::wstring& name, double target);
+    void HandleGoalDelete(const std::wstring& id);
+    void HandleGoalArchive(const std::wstring& id);
     void HandleThemeSelection(const std::wstring& filename);
     void HandleCurrencySelection(const std::wstring& code);
     void HandleRefreshRates();
@@ -71,9 +78,16 @@ private:
     void SaveSelectedTheme() const;
     void LoadSelectedCurrency();
     void SaveSelectedCurrency() const;
+    void AddTrayIcon();
+    void RemoveTrayIcon();
+    void ShowTrayContextMenu();
+    void RestoreFromTray();
+    void ApplyModernTitleBar();
 
     HINSTANCE instance_ = nullptr;
     HWND window_ = nullptr;
+    NOTIFYICONDATAW trayIcon_{};
+    bool trayIconAdded_ = false;
     Microsoft::WRL::ComPtr<ICoreWebView2Environment> environment_;
     Microsoft::WRL::ComPtr<ICoreWebView2Controller> controller_;
     Microsoft::WRL::ComPtr<ICoreWebView2> webView_;

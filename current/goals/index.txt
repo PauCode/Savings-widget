@@ -1,3 +1,2 @@
 default
 default|Savings Goal
-goal-1790529798764|Cum Jar

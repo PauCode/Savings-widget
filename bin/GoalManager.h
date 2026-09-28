@@ -32,11 +32,14 @@ public:
     bool Load();
 
     const std::vector<GoalInfo>& GetGoals() const noexcept;
+    const std::vector<GoalInfo>& GetArchivedGoals() const noexcept;
     const std::wstring& GetActiveGoalId() const noexcept;
     const std::wstring& GetActiveGoalName() const noexcept;
 
     bool SelectGoal(const std::wstring& id);
     bool CreateGoal(const std::wstring& name, int targetRonCents, std::wstring& newId);
+    bool DeleteGoal(const std::wstring& id);
+    bool ArchiveGoal(const std::wstring& id);
 
     int GetActiveGoalTargetRonCents() const noexcept;
     bool SetActiveGoalTargetRonCents(int targetRonCents);
@@ -59,6 +62,8 @@ private:
     bool EnsureMigrated();
     bool LoadIndex();
     bool SaveIndex() const;
+    bool LoadArchivedIndex();
+    bool SaveArchivedIndex() const;
     bool LoadActiveGoalData(const std::wstring& id);
     bool LoadGoalTarget(const std::wstring& id, int& targetRonCents) const;
     bool SaveGoalTarget(const std::wstring& id, int targetRonCents) const;
@@ -66,6 +71,7 @@ private:
     std::wstring MakeGoalId() const;
 
     std::vector<GoalInfo> goals_;
+    std::vector<GoalInfo> archivedGoals_;
     std::wstring activeId_;
     std::wstring activeName_;
     int activeTargetRonCents_ = 0;

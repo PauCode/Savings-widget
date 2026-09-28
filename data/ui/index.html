@@ -6,7 +6,9 @@
     <meta name="color-scheme" content="dark">
     <title>Savings Jar</title>
     <link id="theme-stylesheet" rel="stylesheet" href="/Theme/default/default.css">
+    <link rel="stylesheet" href="goal-management.css">
     <script src="wave-view.js" defer></script>
+    <script src="goal-management.js" defer></script>
     <script src="app.js" defer></script>
 </head>
 <body>
@@ -31,9 +33,12 @@
         </header>
 
         <main>
-            <div class="goal-selector" role="tablist" aria-label="Choose a savings goal">
-                <div class="goal-pills" id="goal-pills"></div>
+            <div class="goal-selector" aria-label="Manage savings jars">
+                <select id="goal-select" class="goal-select" aria-label="Choose a savings jar"></select>
+                <button id="archive-goal-button" class="goal-action-button" type="button" title="Archive completed jar" aria-label="Archive completed jar">&#10003;</button>
+                <button id="delete-goal-button" class="goal-action-button goal-delete-button" type="button" title="Delete jar" aria-label="Delete jar">X</button>
                 <button id="create-goal-button" class="goal-pill goal-pill-add" type="button">+ New jar</button>
+                <button id="show-archived-button" class="archived-jars-button" type="button">Archived jars</button>
             </div>
 
             <section class="savings-view" aria-labelledby="goal-title">
@@ -54,6 +59,10 @@
                     <h2 id="goal-title">Savings Goal</h2>
 
                     <div class="balance-block">
+                        <div class="remaining-line">
+                            <span>Remaining</span>
+                            <strong id="remaining-value">--.--</strong>
+                        </div>
                         <span class="field-label">Current balance</span>
                         <div class="balance-line">
                             <strong id="balance-value">--.--</strong>
@@ -142,6 +151,17 @@
                     <button class="primary-button" type="submit">Create jar</button>
                 </div>
             </form>
+        </dialog>
+        <dialog id="archived-goals-dialog" class="goal-dialog archived-goals-dialog" aria-labelledby="archived-goals-title">
+            <div class="archived-goals-content">
+                <p class="eyebrow">COMPLETED JARS</p>
+                <h2 id="archived-goals-title">Archived jars</h2>
+                <ul id="archived-goals-list" class="archived-goals-list"></ul>
+                <p id="archived-goals-empty" class="archived-goals-empty">No archived jars yet.</p>
+                <div class="dialog-actions">
+                    <button id="close-archived-button" class="primary-button" type="button">Close</button>
+                </div>
+            </div>
         </dialog>
     </div>
 </body>

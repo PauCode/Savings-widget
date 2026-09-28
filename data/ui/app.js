@@ -10,6 +10,7 @@ const removeModeButton = document.querySelector("#remove-mode");
 const depositTitle = document.querySelector("#deposit-title");
 const resetButton = document.querySelector("#reset-button");
 const balanceValue = document.querySelector("#balance-value");
+const remainingValue = document.querySelector("#remaining-value");
 const goalValue = document.querySelector("#goal-value");
 const editGoalButton = document.querySelector("#edit-goal-button");
 const goalDialog = document.querySelector("#goal-dialog");
@@ -23,7 +24,6 @@ const progressTrack = document.querySelector(".progress-track");
 const waveView = new WaveView(document.querySelector("#jar-wave"));
 const rateDate = document.querySelector("#rate-date");
 const goalTitle = document.querySelector("#goal-title");
-const goalPillsContainer = document.querySelector("#goal-pills");
 const createGoalButton = document.querySelector("#create-goal-button");
 const createGoalDialog = document.querySelector("#create-goal-dialog");
 const createGoalForm = document.querySelector("#create-goal-form");
@@ -104,24 +104,6 @@ function setThemeOptions(themes, selectedTheme) {
     themeSelect.value = selectedTheme;
 }
 
-function renderGoalPills(goals, activeGoalId) {
-    goalPillsContainer.replaceChildren();
-    goals.forEach((goal) => {
-        const pill = document.createElement("button");
-        pill.type = "button";
-        pill.className = "goal-pill";
-        pill.classList.toggle("is-active", goal.id === activeGoalId);
-        pill.setAttribute("aria-pressed", String(goal.id === activeGoalId));
-        pill.textContent = goal.name;
-        pill.addEventListener("click", () => {
-            if (goal.id !== activeGoalId) {
-                postMessage({ type: "selectGoal", id: goal.id });
-            }
-        });
-        goalPillsContainer.append(pill);
-    });
-}
-
 function formatHistoryDate(timestampMillis) {
     const date = new Date(timestampMillis);
     const datePart = date.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit" });
@@ -171,7 +153,12 @@ function renderState(state) {
     }
 
     if (state.goals) {
-        renderGoalPills(state.goals, state.activeGoalId);
+        window.goalManagement?.render({
+            goals: state.goals,
+            activeGoalId: state.activeGoalId,
+            archivedGoals: state.archivedGoals || [],
+            canArchiveActiveGoal: Boolean(state.canArchiveActiveGoal)
+        });
     }
     if (state.activeGoalName) {
         goalTitle.textContent = state.activeGoalName;
@@ -208,6 +195,7 @@ function renderState(state) {
 
     if (!state.ratesAvailable) {
         balanceValue.textContent = "--.--";
+        remainingValue.textContent = "--.--";
         goalValue.textContent = "--.--";
         statusMessage.textContent = state.ratesLoading
             ? "Connecting to exchange rates..."
@@ -216,6 +204,7 @@ function renderState(state) {
     }
 
     balanceValue.textContent = formatAmount(state.balanceRon);
+    remainingValue.textContent = `${formatAmount(state.remainingRon)} ${currentCurrency}`;
     goalValue.textContent = `${formatAmount(state.goalRon)} ${currentCurrency}`;
     if (!goalDialog.open) {
         goalAmount.value = Number(state.goalRon).toFixed(2);

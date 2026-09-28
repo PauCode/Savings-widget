@@ -1,0 +1,131 @@
+.goal-selector {
+    flex-wrap: nowrap;
+}
+
+.goal-select {
+    min-width: min(16rem, 45vw);
+    min-height: 2.125rem;
+    padding: 0 2.25rem 0 0.875rem;
+    border: 1px solid var(--accent-strong);
+    border-radius: 7px;
+    background-color: var(--accent-soft);
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.goal-action-button {
+    width: 2.125rem;
+    height: 2.125rem;
+    padding: 0;
+    border: 1px solid var(--panel-edge);
+    border-radius: 7px;
+    background: var(--panel);
+    color: var(--accent);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.goal-action-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.goal-delete-button {
+    color: var(--danger);
+}
+
+.goal-delete-button:hover:not(:disabled) {
+    border-color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 12%, var(--panel));
+}
+
+.goal-action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+}
+
+.archived-jars-button {
+    min-height: 2.125rem;
+    margin-left: auto;
+    padding: 0 0.875rem;
+    border: 1px solid var(--panel-edge);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.archived-jars-button:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.remaining-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.625rem;
+    padding-bottom: 0.625rem;
+    border-bottom: 1px solid var(--panel-edge);
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.remaining-line strong {
+    color: var(--warm);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.archived-goals-content {
+    padding: 22px;
+}
+
+.archived-goals-content h2 {
+    margin: 0 0 1rem;
+    font-size: 1.375rem;
+}
+
+.archived-goals-list {
+    display: grid;
+    gap: 0.5rem;
+    max-height: 18rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.archived-goals-list li {
+    padding: 0.75rem;
+    border: 1px solid var(--panel-edge);
+    border-radius: 7px;
+    background: var(--field);
+}
+
+.archived-goals-empty {
+    margin: 1rem 0;
+    color: var(--muted);
+    font-size: 0.8125rem;
+}
+
+@media (max-width: 720px) {
+    .goal-selector {
+        flex-wrap: wrap;
+    }
+
+    .goal-select {
+        flex: 1 1 12rem;
+    }
+
+    .archived-jars-button {
+        margin-left: 0;
+    }
+}

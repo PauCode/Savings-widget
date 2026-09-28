@@ -138,6 +138,9 @@ bool GoalManager::Load() {
     if (!LoadIndex()) {
         return false;
     }
+    if (!LoadArchivedIndex()) {
+        return false;
+    }
     return LoadActiveGoalData(activeId_);
 }
 
@@ -559,6 +562,7 @@ void GoalManager::RecordHistory(const wchar_t* type, int amountRonCents) const {
     }
     file << NowMillis() << '|' << WideToUtf8(type) << '|' << amountRonCents << '\n';
 }
+
 
 std::wstring GoalManager::MakeGoalId() const {
     return L"goal-" + std::to_wstring(NowMillis());
