@@ -8,6 +8,8 @@ const presetButtons = document.querySelectorAll(".preset-grid .preset-button");
 const addModeButton = document.querySelector("#add-mode");
 const removeModeButton = document.querySelector("#remove-mode");
 const modeToggle = document.querySelector(".mode-toggle");
+const noteToggle = document.querySelector("#note-toggle");
+const depositNote = document.querySelector("#deposit-note");
 const depositTitle = document.querySelector("#deposit-title");
 const resetButton = document.querySelector("#reset-button");
 const balanceValue = document.querySelector("#balance-value");
@@ -60,9 +62,19 @@ function formatAmount(amount) {
 function setDepositEnabled(enabled) {
     depositAmount.disabled = !enabled;
     applyButton.disabled = !enabled;
+    depositNote.disabled = !enabled;
     presetButtons.forEach((button) => {
         button.disabled = !enabled;
     });
+}
+
+function takeNote() {
+    if (!noteToggle.checked) {
+        return "";
+    }
+    const note = depositNote.value.trim();
+    depositNote.value = "";
+    return note;
 }
 
 function updatePresetLabels() {
@@ -147,7 +159,14 @@ function renderHistory(history) {
         amountSpan.className = `history-amount ${entry.type}`;
         amountSpan.textContent = amountText;
 
-        item.append(labelSpan, dateSpan, amountSpan);
+        const noteSpan = document.createElement("span");
+        noteSpan.className = "history-note";
+        noteSpan.textContent = entry.note || "";
+        if (entry.note) {
+            noteSpan.title = entry.note;
+        }
+
+        item.append(labelSpan, dateSpan, noteSpan, amountSpan);
         historyList.append(item);
     });
 }
@@ -270,7 +289,8 @@ presetButtons.forEach((button) => {
     button.addEventListener("click", () => {
         postMessage({
             type: activeMode === "add" ? "deposit" : "withdraw",
-            amount: Number(button.dataset.amount)
+            amount: Number(button.dataset.amount),
+            note: takeNote()
         });
     });
 });
@@ -279,8 +299,18 @@ depositForm.addEventListener("submit", (event) => {
     event.preventDefault();
     postMessage({
         type: activeMode === "add" ? "deposit" : "withdraw",
-        amount: Number(depositAmount.value)
+        amount: Number(depositAmount.value),
+        note: takeNote()
     });
+});
+
+noteToggle.addEventListener("change", () => {
+    depositNote.hidden = !noteToggle.checked;
+    if (noteToggle.checked) {
+        depositNote.focus();
+    } else {
+        depositNote.value = "";
+    }
 });
 
 resetButton.addEventListener("click", () => {

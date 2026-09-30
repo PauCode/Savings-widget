@@ -59,8 +59,8 @@ private:
     void HandleControllerCreated(HRESULT result, ICoreWebView2Controller* controller);
     void HandleWebMessage(ICoreWebView2WebMessageReceivedEventArgs* args);
     void HandleRatesLoaded();
-    void HandleDeposit(double amount);
-    void HandleWithdrawal(double amount);
+    void HandleDeposit(double amount, const std::wstring& note);
+    void HandleWithdrawal(double amount, const std::wstring& note);
     void HandleReset();
     void HandleGoalTargetChange(double amount);
     void HandleGoalSelect(const std::wstring& id);

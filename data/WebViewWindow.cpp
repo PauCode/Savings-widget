@@ -619,9 +619,13 @@ void WebViewWindow::HandleWebMessage(
             pageReady_ = true;
             SendState();
         } else if (type == L"deposit") {
-            HandleDeposit(message.GetNamedNumber(L"amount"));
+            HandleDeposit(
+                message.GetNamedNumber(L"amount"),
+                std::wstring(message.GetNamedString(L"note", L"")));
         } else if (type == L"withdraw") {
-            HandleWithdrawal(message.GetNamedNumber(L"amount"));
+            HandleWithdrawal(
+                message.GetNamedNumber(L"amount"),
+                std::wstring(message.GetNamedString(L"note", L"")));
         } else if (type == L"reset") {
             HandleReset();
         } else if (type == L"goal") {
@@ -736,7 +740,7 @@ void WebViewWindow::FinalizeDefaultGoalIfNeeded() {
         static_cast<int>(std::lround(*defaultGoalRon * 100.0)));
 }
 
-void WebViewWindow::HandleDeposit(double amount) {
+void WebViewWindow::HandleDeposit(double amount, const std::wstring& note) {
     if (!ratesAvailable_) {
         SendState(ratesLoading_ ? L"Exchange rates are still loading."
                                 : L"Exchange rates are unavailable.");
@@ -749,7 +753,7 @@ void WebViewWindow::HandleDeposit(double amount) {
         return;
     }
 
-    const DepositResult result = goalManager_.AddDeposit(*amountRon);
+    const DepositResult result = goalManager_.AddDeposit(*amountRon, note);
     switch (result) {
     case DepositResult::InvalidAmount:
         SendState(L"Enter a valid amount greater than 0.");
@@ -769,7 +773,7 @@ void WebViewWindow::HandleDeposit(double amount) {
     }
 }
 
-void WebViewWindow::HandleWithdrawal(double amount) {
+void WebViewWindow::HandleWithdrawal(double amount, const std::wstring& note) {
     if (!ratesAvailable_) {
         SendState(ratesLoading_ ? L"Exchange rates are still loading."
                                 : L"Exchange rates are unavailable.");
@@ -782,7 +786,7 @@ void WebViewWindow::HandleWithdrawal(double amount) {
         return;
     }
 
-    const DepositResult result = goalManager_.RemoveFunds(*amountRon);
+    const DepositResult result = goalManager_.RemoveFunds(*amountRon, note);
     switch (result) {
     case DepositResult::Removed:
         SendState(L"Amount removed.");
@@ -1123,7 +1127,23 @@ void WebViewWindow::SendState(const std::wstring& status) {
         }
         json << L'"' << WidenAscii(supportedCurrencies[index]) << L'"';
     }
-    json << L"],\"goals\":[";
+    json << L"],\"rates\":{";
+
+    json << std::setprecision(6);
+    bool firstRate = true;
+    for (const auto& code : supportedCurrencies) {
+        const auto rate = currencyRates_.Convert(1.0, "USD", code);
+        if (!rate) {
+            continue;
+        }
+        if (!firstRate) {
+            json << L',';
+        }
+        firstRate = false;
+        json << L'"' << WidenAscii(code) << L"\":" << *rate;
+    }
+    json << std::setprecision(2);
+    json << L"},\"goals\":[";
 
     const auto& goals = goalManager_.GetGoals();
     for (std::size_t index = 0; index < goals.size(); ++index) {
@@ -1157,6 +1177,7 @@ void WebViewWindow::SendState(const std::wstring& status) {
             : ConvertToDisplayCurrency(amountRon).value_or(amountRon);
         json << L"{\"timestamp\":" << history[index].timestampMillis
              << L",\"type\":\"" << EscapeJson(history[index].type)
+             << L"\",\"note\":\"" << EscapeJson(history[index].note)
              << L"\",\"amountRon\":" << amountDisplay
              << L"}";
     }

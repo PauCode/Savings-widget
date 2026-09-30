@@ -10,9 +10,12 @@
     <link rel="stylesheet" href="close-behavior.css">
     <link rel="stylesheet" href="startup-settings.css">
     <link rel="stylesheet" href="reminder.css">
+    <link rel="stylesheet" href="deposit-note.css">
+    <link rel="stylesheet" href="exchange-rates.css">
     <script src="wave-view.js" defer></script>
     <script src="startup-settings.js" defer></script>
     <script src="reminder.js" defer></script>
+    <script src="exchange-rates.js" defer></script>
     <script src="goal-management.js" defer></script>
     <script src="close-behavior.js" defer></script>
     <script src="app.js" defer></script>
@@ -58,6 +61,7 @@
                         </div>
                     </div>
                     <div class="rate-stamp" id="rate-date">Rates loading</div>
+                    <button id="show-rates-button" class="rates-button" type="button">Exchange rates</button>
                 </div>
 
                 <div class="account-panel">
@@ -103,10 +107,18 @@
                             <span class="currency-tag" id="currency-tag">RON</span>
                         </div>
 
-                        <div class="mode-toggle" role="group" aria-label="Change add or remove from savings jar">
-                            <button id="add-mode" class="mode-button is-active" type="button" aria-pressed="true">Add</button>
-                            <button id="remove-mode" class="mode-button" type="button" aria-pressed="false">Remove</button>
+                        <div class="deposit-controls">
+                            <div class="mode-toggle" role="group" aria-label="Change add or remove from savings jar">
+                                <button id="add-mode" class="mode-button is-active" type="button" aria-pressed="true">Add</button>
+                                <button id="remove-mode" class="mode-button" type="button" aria-pressed="false">Remove</button>
+                            </div>
+                            <label class="note-toggle">
+                                <input id="note-toggle" type="checkbox">
+                                <span>Add a note</span>
+                            </label>
                         </div>
+
+                        <input id="deposit-note" class="deposit-note" type="text" maxlength="60" placeholder="Note for this deposit (optional)" hidden>
 
                         <div class="preset-grid" aria-label="Quick deposit amounts">
                             <button class="preset-button" type="button" data-amount="50">+50 RON</button>
@@ -254,6 +266,20 @@
                     <button class="primary-button" type="submit">Save notification</button>
                 </div>
             </form>
+        </dialog>
+        <dialog id="rates-dialog" class="goal-dialog rates-dialog" aria-labelledby="rates-title">
+            <div class="rates-content">
+                <p class="eyebrow">EXCHANGE RATES</p>
+                <h2 id="rates-title">Exchange rates</h2>
+                <label for="rates-base">Convert from</label>
+                <select id="rates-base" aria-label="Choose the base currency"></select>
+                <ul id="rates-list" class="rates-list"></ul>
+                <p id="rates-updated" class="rates-updated"></p>
+                <div class="dialog-actions">
+                    <button id="refresh-rates-dialog" class="preset-button" type="button">Refresh</button>
+                    <button id="close-rates-button" class="primary-button" type="button">Close</button>
+                </div>
+            </div>
         </dialog>
     </div>
 </body>

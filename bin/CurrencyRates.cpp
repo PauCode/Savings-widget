@@ -92,7 +92,7 @@ std::optional<std::string> DownloadRates(const RateEndpoint& endpoint) {
     WinHttpHandle request{WinHttpOpenRequest(
         connection.Get(), L"GET", endpoint.path, nullptr,
         WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
-        WINHTTP_FLAG_SECURE)};
+        WINHTTP_FLAG_SECURE | WINHTTP_FLAG_REFRESH)};
     if (!request.Get() ||
         !WinHttpSendRequest(request.Get(), WINHTTP_NO_ADDITIONAL_HEADERS, 0,
                             WINHTTP_NO_REQUEST_DATA, 0, 0, 0) ||

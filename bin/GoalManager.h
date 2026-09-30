@@ -15,6 +15,7 @@ struct GoalHistoryEntry {
     long long timestampMillis = 0;
     std::wstring type; // "deposit" | "withdraw" | "reset"
     int amountRonCents = 0;
+    std::wstring note;
 };
 
 // Owns the list of savings goals ("jars"), the currently active goal, and
@@ -22,7 +23,7 @@ struct GoalHistoryEntry {
 // its own directory under %APPDATA%/PauCode/Savings Jar/goals/<id>/ containing:
 //   savings.dat  - 4-byte balance in RON cents (SavingsData format)
 //   goal.dat     - 4-byte target in RON cents
-//   history.log  - append-only "<millis>|<type>|<ronCents>" text lines
+//   history.log  - append-only "<millis>|<type>|<ronCents>|<note>" text lines
 // The goals/index.txt file tracks the active goal id and the goal list.
 // A first run creates an empty index; the UI then asks the user to create
 // their first jar.
@@ -45,8 +46,8 @@ public:
     bool SetActiveGoalTargetRonCents(int targetRonCents);
 
     int GetActiveSavedCents() const noexcept;
-    DepositResult AddDeposit(double amountRon);
-    DepositResult RemoveFunds(double amountRon);
+    DepositResult AddDeposit(double amountRon, const std::wstring& note = {});
+    DepositResult RemoveFunds(double amountRon, const std::wstring& note = {});
     bool ResetActiveGoal();
 
     // Older goal directories stored the balance in USD cents (converted to
@@ -67,7 +68,8 @@ private:
     bool LoadActiveGoalData(const std::wstring& id);
     bool LoadGoalTarget(const std::wstring& id, int& targetRonCents) const;
     bool SaveGoalTarget(const std::wstring& id, int targetRonCents) const;
-    void RecordHistory(const wchar_t* type, int amountRonCents) const;
+    void RecordHistory(
+        const wchar_t* type, int amountRonCents, const std::wstring& note) const;
     std::wstring MakeGoalId() const;
 
     std::vector<GoalInfo> goals_;

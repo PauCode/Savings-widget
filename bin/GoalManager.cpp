@@ -82,6 +82,29 @@ std::wstring SanitizeGoalName(const std::wstring& rawName) {
     return name;
 }
 
+std::wstring SanitizeHistoryNote(const std::wstring& rawNote) {
+    std::wstring note;
+    note.reserve(rawNote.size());
+    for (wchar_t character : rawNote) {
+        note.push_back(
+            character == L'|' || character == L'\n' || character == L'\r' ||
+                    character == L'\t'
+                ? L' '
+                : character);
+    }
+
+    while (!note.empty() && note.front() == L' ') {
+        note.erase(note.begin());
+    }
+    while (!note.empty() && note.back() == L' ') {
+        note.pop_back();
+    }
+    if (note.size() > 60) {
+        note.resize(60);
+    }
+    return note;
+}
+
 bool ReadUint32(const fs::path& path, std::uint32_t& value) {
     std::ifstream file(path, std::ios::binary);
     unsigned char bytes[4]{};
@@ -230,18 +253,20 @@ int GoalManager::GetActiveSavedCents() const noexcept {
     return activeSavings_.GetSavedCents();
 }
 
-DepositResult GoalManager::AddDeposit(double amountRon) {
+DepositResult GoalManager::AddDeposit(double amountRon, const std::wstring& note) {
     const DepositResult result = activeSavings_.AddDeposit(amountRon);
     if (result == DepositResult::Added) {
-        RecordHistory(L"deposit", static_cast<int>(std::lround(amountRon * 100.0)));
+        RecordHistory(
+            L"deposit", static_cast<int>(std::lround(amountRon * 100.0)), note);
     }
     return result;
 }
 
-DepositResult GoalManager::RemoveFunds(double amountRon) {
+DepositResult GoalManager::RemoveFunds(double amountRon, const std::wstring& note) {
     const DepositResult result = activeSavings_.RemoveFunds(amountRon);
     if (result == DepositResult::Removed) {
-        RecordHistory(L"withdraw", static_cast<int>(std::lround(amountRon * 100.0)));
+        RecordHistory(
+            L"withdraw", static_cast<int>(std::lround(amountRon * 100.0)), note);
     }
     return result;
 }
@@ -250,7 +275,7 @@ bool GoalManager::ResetActiveGoal() {
     if (!activeSavings_.Reset()) {
         return false;
     }
-    RecordHistory(L"reset", 0);
+    RecordHistory(L"reset", 0, {});
     return true;
 }
 
@@ -320,7 +345,17 @@ std::vector<GoalHistoryEntry> GoalManager::GetActiveHistory(
             const std::string type = line.substr(
                 firstSeparator + 1, secondSeparator - firstSeparator - 1);
             entry.type = Utf8ToWide(type);
-            entry.amountRonCents = std::stoi(line.substr(secondSeparator + 1));
+
+            const auto thirdSeparator = line.find('|', secondSeparator + 1);
+            entry.amountRonCents = std::stoi(
+                thirdSeparator == std::string::npos
+                    ? line.substr(secondSeparator + 1)
+                    : line.substr(
+                          secondSeparator + 1,
+                          thirdSeparator - secondSeparator - 1));
+            if (thirdSeparator != std::string::npos) {
+                entry.note = Utf8ToWide(line.substr(thirdSeparator + 1));
+            }
         } catch (const std::exception&) {
             continue;
         }
@@ -484,7 +519,8 @@ bool GoalManager::SaveGoalTarget(
         directory / L"goal.dat", static_cast<std::uint32_t>(targetRonCents));
 }
 
-void GoalManager::RecordHistory(const wchar_t* type, int amountRonCents) const {
+void GoalManager::RecordHistory(
+    const wchar_t* type, int amountRonCents, const std::wstring& note) const {
     const auto directory = GetGoalDirectory(activeId_);
     if (directory.empty()) {
         return;
@@ -500,7 +536,8 @@ void GoalManager::RecordHistory(const wchar_t* type, int amountRonCents) const {
     if (!file) {
         return;
     }
-    file << NowMillis() << '|' << WideToUtf8(type) << '|' << amountRonCents << '\n';
+    file << NowMillis() << '|' << WideToUtf8(type) << '|' << amountRonCents
+         << '|' << WideToUtf8(SanitizeHistoryNote(note)) << '\n';
 }
 
 

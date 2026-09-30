@@ -4,5 +4,22 @@
             "approve": true,
             "matchCommandLine": true
         }
-    }
+    },
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "text": "Never use Conventional Commit prefixes. Do not start the subject with feat, fix, chore, docs, refactor, style, test, build, ci, perf or any 'type:' or 'type(scope):' pattern."
+        },
+        {
+            "text": "Write the subject in sentence case and imperative mood, under 72 characters, with no trailing period."
+        },
+        {
+            "text": "Always include a body. Leave one blank line after the subject, then list changes as '- ' bullets."
+        },
+        {
+            "text": "Write one bullet per meaningful change. Name the files, classes or functions involved and say what changed and why. Prefer several specific bullets over one vague sentence."
+        },
+        {
+            "text": "Call out user-visible behaviour changes, new or renamed files, changes to persisted data or file formats, and build script changes. Describe only what the diff actually contains."
+        }
+    ]
 }
