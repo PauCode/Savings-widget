@@ -1,20 +1,24 @@
+DISCLAIMER THIS PROJECT IS VIBE CODED, IF YOU DON’T LIKE IT YOU DON’T HAVE TO USE IT. I MADE IT FOR MY OWN PLEASURE
+
 # Savings Jar
 
 Savings Jar is a small Windows desktop app that makes saving money simple and visual. It is made for people who spend a lot of time on their computer and would rather track their savings there than on a phone.
 
 Create a jar for each thing you are saving for, set a target, and add or remove money as you go. The jar fills with animated liquid as you get closer to your goal.
 
-[screenshot of the main window with a jar partly filled here]
+<img width="1324" height="1340" alt="main window with a jar partly filled" src="https://github.com/user-attachments/assets/f8921619-990e-4a12-9398-2425e5fba7cc" />
+
 
 ## Features
 
 - **Multiple jars**: Keep a separate jar for each goal (a guitar, a holiday, an emergency fund) and switch between them from a dropdown. Jars can be renamed, and names are limited to 30 characters.
 
-  [screenshot of the jar dropdown and jar controls here]
+  <img width="915" height="418" alt="jar dropdown" src="https://github.com/user-attachments/assets/61ec05a6-e547-46b0-a191-7085266746a1" />
+  <img width="1442" height="922" alt="jar controls" src="https://github.com/user-attachments/assets/5a12b5c2-ade5-45e3-bbd9-06e3d17a4916" />
 
 - **Targets and progress**: Each jar has a target amount. The app shows your current balance, the remaining amount to reach the goal, and a progress bar with a percentage.
 
-  [screenshot of the balance, remaining amount and progress bar here]
+  <img width="1396" height="849" alt="balance, remaining amount and progress bar" src="https://github.com/user-attachments/assets/b07ffc73-1c56-4615-ae6f-3fc0317fd141" />
 
 - **Quick deposits and withdrawals**: Use the preset buttons (50 to 1,500) or enter a custom amount. Switch between **Add** and **Remove** to deposit or withdraw.
 
